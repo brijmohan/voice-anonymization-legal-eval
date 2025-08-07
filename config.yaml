@@ -1,0 +1,82 @@
+# Configuration file for legally validated voice anonymization evaluation
+# This file can be customized for different evaluation scenarios
+
+evaluation:
+  # Conversation lengths to test (number of utterances per speaker)
+  conversation_lengths: [1, 3, 30]
+  
+  # Number of speakers to test with
+  speaker_counts: [20, 100, 1000, 10000]
+  
+  # Number of random runs for robustness
+  num_runs: 5
+  
+  # Number of cross-validation folds
+  num_folds: 10
+
+anonymization:
+  # Anonymization system to evaluate
+  system: "baseline_b1"
+  
+  # Parameters for the anonymization system
+  parameters:
+    # Number of candidate x-vectors to select from
+    candidate_count: 100
+    
+    # Random seed for reproducibility
+    random_seed: 42
+
+speaker_embedding:
+  # Speaker embedding model to use
+  model: "ecapa_tdnn"
+  
+  # Path to pretrained model (optional)
+  extractor_path: "models/ecapa_tdnn.pth"
+  
+  # Audio processing parameters
+  sample_rate: 16000
+  frame_length: 0.025
+  frame_shift: 0.010
+  
+  # Embedding dimension
+  embedding_dim: 192
+
+# Attack models to evaluate against
+attack_models:
+  - "ignorant"      # Attacker unaware that data is anonymized
+  - "semi_informed" # Attacker aware of anonymization but uses outdated system
+  - "informed"      # Attacker has full knowledge of anonymization process
+
+# Data paths (customize these for your setup)
+data:
+  # Path to test data
+  test_data_path: "data/test"
+  
+  # Path to enrollment data
+  enrollment_data_path: "data/enrollment"
+  
+  # Path to training data (for attacker training)
+  training_data_path: "data/training"
+  
+  # Path to save results
+  output_path: "results/evaluation_results.json"
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/evaluation.log"
+
+# Performance settings
+performance:
+  # Number of parallel processes for evaluation
+  num_processes: 4
+  
+  # Batch size for processing
+  batch_size: 32
+  
+  # Use GPU if available
+  use_gpu: true
+  
+  # GPU device ID
+  gpu_device: 0
