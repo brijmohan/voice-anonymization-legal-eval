@@ -12,6 +12,14 @@ sweep each metric over the number of speakers the attacker must search.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# Running a script inside examples/ puts examples/ on sys.path, not the repo
+# root, so an uninstalled clone cannot import the package. Append (not insert)
+# the repo root as a fallback: a proper `pip install -e .` still takes priority.
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from legal_eval.demo import simulate_anonymization, split_corpus, synthetic_corpus
 from legal_eval.embeddings import build_speaker_embeddings, build_test_embeddings
 from legal_eval.metrics import TRIVIAL_SINGLING_OUT

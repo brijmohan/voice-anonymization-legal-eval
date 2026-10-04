@@ -177,7 +177,14 @@ def _success_probability(
     """
     if n_sampled == 0:
         return np.ones_like(beaters, dtype=np.float64)
-    from scipy.special import gammaln
+    try:
+        from scipy.special import gammaln
+    except ImportError as exc:  # pragma: no cover - depends on environment
+        raise ImportError(
+            "The 'exact' estimator needs SciPy for a numerically stable "
+            "log-binomial. Install it with `pip install scipy`, or use the "
+            "default estimator='sampling', which needs only NumPy."
+        ) from exc
 
     good = n_others - beaters.astype(np.float64)
     # C(good, k) / C(n_others, k) with k = n_sampled.

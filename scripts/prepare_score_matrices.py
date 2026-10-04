@@ -30,6 +30,11 @@ from pathlib import Path
 
 import numpy as np
 
+# Running a script inside examples/ puts examples/ on sys.path, not the repo
+# root, so an uninstalled clone cannot import the package. Append (not insert)
+# the repo root as a fallback: a proper `pip install -e .` still takes priority.
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from legal_eval.io import ScoreMatrix, save_score_matrix
 
 #: attacker -> L -> (directory, matrix filename). Mirrors examples/03.

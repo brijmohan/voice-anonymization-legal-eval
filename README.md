@@ -29,7 +29,12 @@ pip install -e ".[all]"      # or: pip install -e .  for the numpy/scipy core
 ```
 
 Python 3.9 or newer. The core needs only NumPy and SciPy; `h5py` is needed to
-read HDF5 x-vector files, `matplotlib` to draw figures.
+read HDF5 x-vector files, `matplotlib` to draw figures. SciPy and h5py are
+imported only where they are used, so most of the package works without them.
+
+The scripts under `examples/` and `scripts/` also run straight from a clone
+without installing anything, falling back to the repo root on `sys.path`. An
+installed copy always takes priority, so this never shadows a real install.
 
 ## Try it in 30 seconds
 
