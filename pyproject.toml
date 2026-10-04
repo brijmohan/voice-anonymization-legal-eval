@@ -69,7 +69,14 @@ include = ["legal_eval*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-filterwarnings = ["error"]
+filterwarnings = [
+    # Our own warnings are bugs; fail on them.
+    "error",
+    # Third-party import-time noise we cannot fix. Older matplotlib, which is
+    # what Python 3.9 resolves to, calls a pyparsing API that pyparsing has
+    # since deprecated.
+    "ignore:'enablePackrat' deprecated",
+]
 
 [tool.ruff]
 line-length = 100
