@@ -6,6 +6,10 @@ lengths, each with four attacker curves. The values behind it are shipped in
 
 ``attacker,L,enrollment_speakers,curve_type,<metric>_mean,<metric>_std,chance``
 
+The EER is loaded in its raw form, the same convention
+:func:`~legal_eval.sweeps.eer_sweep` returns, so that the single inversion to
+the ``1 - EER`` the paper plots happens in the plotting layer for both sources.
+
 These are summary statistics, not per-run values, so they load into
 :class:`PublishedCurve` rather than
 :class:`~legal_eval.sweeps.SweepResult`. Both expose ``speaker_counts``,
@@ -30,9 +34,10 @@ ATTACKER_KEYS = {
 _METRIC_FILES = {
     "linkability": ("linkability_results.csv", "linkability_mean", "linkabilitystd"),
     "singling_out": ("singling_out_results.csv", "singling_out_mean", "singling_out_std"),
-    # Stored already inverted, as the paper plots it. The sweeps in this package
-    # return the raw EER, so the plotting layer inverts theirs to match.
-    "eer": ("one_minus_eer_results.csv", "eer_mean", "eer_std"),
+    # The raw EER, matching what eer_sweep returns. The figure plots 1-EER, and
+    # the plotting layer does that inversion for both sources. The same values
+    # already inverted are in one_minus_eer_results.csv, for reading directly.
+    "eer": ("eer_results.csv", "eer_mean", "eer_std"),
 }
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "paper_results"

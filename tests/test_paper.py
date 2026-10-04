@@ -20,9 +20,9 @@ original,1,30,orig,0.5690,0.0,0.37
 original,1,100,orig,0.5032,0.0,0.37
 """
 
-ONE_MINUS_EER_CSV = """\
+EER_CSV = """\
 attacker,L,enrollment_speakers,curve_type,eer_mean,eer_std,chance
-original,1,20,orig,0.8316,0.0221,0.5
+original,1,20,orig,0.1684,0.0221,0.5
 """
 
 
@@ -30,7 +30,7 @@ original,1,20,orig,0.8316,0.0221,0.5
 def data_dir(tmp_path):
     (tmp_path / "linkability_results.csv").write_text(LINKABILITY_CSV, encoding="utf-8")
     (tmp_path / "singling_out_results.csv").write_text(SINGLING_OUT_CSV, encoding="utf-8")
-    (tmp_path / "one_minus_eer_results.csv").write_text(ONE_MINUS_EER_CSV, encoding="utf-8")
+    (tmp_path / "eer_results.csv").write_text(EER_CSV, encoding="utf-8")
     return tmp_path
 
 
@@ -71,10 +71,14 @@ def test_chance_levels_are_carried_through(data_dir):
     assert singling["singling_out"][1]["original"].chance[30] == pytest.approx(0.37, abs=0.01)
 
 
-def test_eer_is_stored_already_inverted(data_dir):
-    """The CSV holds 1-EER, which is what the paper plots."""
+def test_eer_is_loaded_raw_not_inverted(data_dir):
+    """Raw EER in memory, matching eer_sweep; the plotting layer inverts once.
+
+    Loading the already-inverted file instead would invert twice and silently
+    flip every EER panel upside down.
+    """
     curve = load_paper_results("eer", data_dir=data_dir)["eer"][1]["original"]
-    assert curve.means[20] == pytest.approx(0.8316)
+    assert curve.means[20] == pytest.approx(0.1684)
     assert curve.chance[20] == pytest.approx(0.5)
 
 

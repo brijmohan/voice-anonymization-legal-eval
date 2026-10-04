@@ -62,6 +62,17 @@ def chance_level(metric: str, speaker_counts: Sequence[int]) -> np.ndarray:
     raise ValueError(f"unknown metric {metric!r}")
 
 
+def _compact_count(value: float, _position: int = 0) -> str:
+    """Format a speaker count compactly: 20, 500, 2k, 20k.
+
+    Spelling out five digits makes the labels collide once the axis spans three
+    decades, which it does for the paper's 20 to 22,024 range.
+    """
+    if value >= 1000:
+        return f"{value / 1000:g}k"
+    return f"{value:g}"
+
+
 def _style_axis(ax) -> None:
     """Apply the shared panel styling: log x, 0-1 y, plain tick labels.
 
@@ -69,14 +80,12 @@ def _style_axis(ax) -> None:
     minor labels like ``2 x 10^0``, which collide on a narrow range. Speaker
     counts read better as plain integers at the 1/2/5 steps.
     """
-    from matplotlib.ticker import LogLocator, NullFormatter, ScalarFormatter
+    from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter
 
     ax.set_xscale("log")
     ax.set_ylim(0.0, 1.0)
     ax.xaxis.set_major_locator(LogLocator(base=10.0, subs=(1.0, 2.0, 5.0), numticks=12))
-    formatter = ScalarFormatter()
-    formatter.set_scientific(False)
-    ax.xaxis.set_major_formatter(formatter)
+    ax.xaxis.set_major_formatter(FuncFormatter(_compact_count))
     ax.xaxis.set_minor_formatter(NullFormatter())
     ax.tick_params(axis="x", labelsize=8)
     ax.grid(True, which="major", linewidth=0.4, alpha=0.4)
