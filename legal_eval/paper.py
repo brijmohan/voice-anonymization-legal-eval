@@ -40,7 +40,9 @@ _METRIC_FILES = {
     "eer": ("eer_results.csv", "eer_mean", "eer_std"),
 }
 
-DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "paper_results"
+# Shipped inside the package, not beside it, so that the published results
+# are importable after `pip install` and not only from a source checkout.
+DEFAULT_DATA_DIR = Path(__file__).resolve().parent / "data" / "paper_results"
 
 
 @dataclass

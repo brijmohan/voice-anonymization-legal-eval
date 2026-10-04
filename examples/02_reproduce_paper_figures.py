@@ -5,7 +5,7 @@ Run with::
 
     python examples/02_reproduce_paper_figures.py --output-dir figures
 
-This uses the published results shipped in ``data/paper_results/``, which cover
+This uses the published results shipped in ``legal_eval/data/paper_results/``, which cover
 all nine panels of the paper's Figure 1: Singling Out, Linkability and 1-EER,
 each at L = 1, 3 and 30, each with four attacker curves.
 

@@ -10,7 +10,7 @@ Two layouts are supported.
 
 If you downloaded the published release, point at the directory holding
 ``scores_<attacker>_L<length>.npy``, and the recomputed curves are compared
-against the published results shipped in ``data/paper_results/``::
+against the published results shipped in ``legal_eval/data/paper_results/``::
 
     python examples/03_verify_against_score_matrices.py --release-dir release/
 

@@ -33,7 +33,7 @@ of which is compatible with this repository's MIT licence.
 
 ## Shipped reference data
 
-`data/paper_results/linkability_original_L{1,3,10,30}.json` are the original
+`legal_eval/data/paper_results/linkability_original_L{1,3,10,30}.json` are the original
 experiment's outputs for the **Original** (non-anonymized) condition: 220
 population sizes from 20 to 21,920, five runs each. They come from
 `cnil_linkability/plot1_scores_step100.json` and

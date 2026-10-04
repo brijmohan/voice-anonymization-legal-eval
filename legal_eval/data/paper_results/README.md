@@ -39,13 +39,13 @@ give 0.950 and 0.944 at `N'=20` against "94-95%".
 **The error bars understate the true spread.** These were produced with a
 run-to-run RNG bug: the five "independent" runs shared random state across
 parallel workers. At `N'=20` in `L1` two runs are identical to 16 digits. The
-means are unaffected. See [`docs/differences.md`](../../docs/differences.md).
+means are unaffected. See [`docs/differences.md`](../../../docs/differences.md).
 
 **The anonymized conditions are not here.** Results for the Informed,
 Semi-Informed and Ignorant attackers, and all Singling Out and EER results, were
 never committed to version control and exist only on the machines the experiments
 ran on. Regenerating them needs the cosine score matrices; see
-[`docs/reproduction.md`](../../docs/reproduction.md).
+[`docs/reproduction.md`](../../../docs/reproduction.md).
 
 ## Provenance
 

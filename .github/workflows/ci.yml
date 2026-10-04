@@ -30,3 +30,9 @@ jobs:
         run: python examples/02_reproduce_paper_figures.py --output-dir /tmp/figures
       - name: End-to-end demo
         run: legal-eval demo --output-dir /tmp/demo
+
+      - name: Build and check the distribution
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          python -m twine check dist/*

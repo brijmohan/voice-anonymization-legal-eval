@@ -59,7 +59,7 @@ behaviour reachable by a flag where it affects results:
 - `random.sample` was called on a `set`, which raises `TypeError` on Python 3.11
   and later.
 
-**Data**: `data/paper_results/` ships the original Linkability results for the
+**Data**: `legal_eval/data/paper_results/` ships the original Linkability results for the
 Original condition at `L ∈ {1, 3, 10, 30}`, reproducing every Linkability value
 quoted in the paper.
 

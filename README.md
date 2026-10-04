@@ -25,7 +25,14 @@ barely moves, while Linkability and Singling Out move a great deal.
 ## Install
 
 ```bash
-pip install -e ".[all]"      # or: pip install -e .  for the numpy/scipy core
+pip install voice-anonymization-legal-eval          # core
+pip install "voice-anonymization-legal-eval[all]"   # plus h5py and matplotlib
+```
+
+From a checkout, for development:
+
+```bash
+pip install -e ".[dev]"
 ```
 
 Python 3.9 or newer. The core needs only NumPy and SciPy; `h5py` is needed to
@@ -134,7 +141,7 @@ trained x-vector extractors, so it is not something to re-run casually.
 [`docs/reproduction.md`](docs/reproduction.md) sets out what is needed at each
 stage and what this repository can verify on its own.
 
-`data/paper_results/` ships the values behind all nine panels of the paper's
+`legal_eval/data/paper_results/` ships the values behind all nine panels of the paper's
 Figure 1: three metrics, three conversation lengths, four attacker models.
 `python examples/02_reproduce_paper_figures.py` redraws the figure from them and
 checks it against the values quoted in the paper's text.
@@ -203,6 +210,13 @@ The suite pins behaviour rather than just exercising it:
 - ROCCH-EER: matches a brute-force search over randomised decision rules, and the
   analytic EER of separated Gaussians.
 - Both legal metrics respond to conversation length while the EER stays flat.
+
+## Releasing
+
+See [`docs/releasing.md`](docs/releasing.md). Versioning treats **the numbers the
+metrics produce** as the public contract, not just the Python API: anything that
+moves a value is a major version and gets an entry in
+[`docs/differences.md`](docs/differences.md).
 
 ## Citation
 

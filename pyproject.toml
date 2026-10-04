@@ -4,11 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "voice-anonymization-legal-eval"
-version = "2.0.0"
+dynamic = ["version"]
 description = "Legally validated evaluation framework for voice anonymization (Interspeech 2025)"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "Nathalie Vauquier" },
     { name = "Brij Mohan Lal Srivastava", email = "brij@nijta.com" },
@@ -27,14 +28,17 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Security",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
 ]
 dependencies = [
     "numpy>=1.21",
@@ -58,14 +62,27 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/brijmohan/voice-anonymization-legal-eval"
-Paper = "https://www.isca-archive.org/interspeech_2025/vauquier25_interspeech.html"
+Documentation = "https://github.com/brijmohan/voice-anonymization-legal-eval#readme"
+Source = "https://github.com/brijmohan/voice-anonymization-legal-eval"
 Issues = "https://github.com/brijmohan/voice-anonymization-legal-eval/issues"
+Changelog = "https://github.com/brijmohan/voice-anonymization-legal-eval/blob/main/CHANGELOG.md"
+Paper = "https://doi.org/10.21437/Interspeech.2025-1699"
+Dataset = "https://doi.org/10.5281/zenodo.23142030"
 
 [project.scripts]
 legal-eval = "legal_eval.cli:main"
 
+[tool.setuptools.dynamic]
+version = { attr = "legal_eval.__about__.__version__" }
+
 [tool.setuptools.packages.find]
 include = ["legal_eval*"]
+
+[tool.setuptools.package-data]
+# The published results behind the paper figure travel with the package, so
+# load_paper_results() works from a wheel and not only from a checkout.
+legal_eval = ["data/paper_results/*.csv", "data/paper_results/*.json",
+              "data/paper_results/README.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

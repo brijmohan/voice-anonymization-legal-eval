@@ -115,7 +115,7 @@ python examples/02_reproduce_paper_figures.py  # the published curves vs the pap
 legal-eval demo                                # the whole pipeline on synthetic embeddings
 ```
 
-`examples/02` checks the shipped `data/paper_results/` against every Linkability
+`examples/02` checks the shipped `legal_eval/data/paper_results/` against every Linkability
 value quoted in the paper's Section 5. The test suite pins the metrics against
 independent oracles and against their theoretical baselines. See
 [provenance.md](provenance.md#how-correctness-was-established).

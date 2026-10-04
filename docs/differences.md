@@ -25,7 +25,7 @@ depend on worker scheduling, thread count, or evaluation order.
 
 **Effect.** Means are unaffected. The reported standard deviation becomes a
 meaningful estimate of run-to-run spread rather than an artefact of scheduling.
-The error bars in the shipped `data/paper_results/` files are therefore
+The error bars in the shipped `legal_eval/data/paper_results/` files are therefore
 understated relative to what this code produces.
 
 ## Fixed: the fold loop reused a single data split
