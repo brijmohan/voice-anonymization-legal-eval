@@ -74,27 +74,51 @@ Concretely, a recipient can:
 
 All of this stays inside the pseudonymous label space.
 
+## Do not treat the pseudonyms as a safeguard
+
+It would be convenient to argue that `spk-f-20851` protects anyone. It does not,
+and a paper about anonymization should not lean on an argument it would reject
+from someone else.
+
+The file lists defining subsets A and B are **already published**, CC-BY, at
+[10.5281/zenodo.14976869](https://doi.org/10.5281/zenodo.14976869). Common Voice
+11.0 and its per-clip `client_id` metadata are public. So anyone can reconstruct
+the speaker grouping of both subsets with real Common Voice identifiers. And
+because this repository deliberately makes the pipeline reproducible, they can
+also compute their own *original*-condition score matrix and align it to the
+released one by permutation, which recovers the pseudonym-to-client-id mapping.
+
+The pseudonyms raise the cost of de-anonymisation. They do not prevent it.
+
 ## Why releasing them is still reasonable
 
-1. **The labels are already pseudonyms.** `spk-f-20851` is an internal
-   identifier, not a Common Voice client id. There is no direct path from the
-   matrices to a Common Voice account, let alone to a person.
-2. **The source material is public.** Common Voice 11.0 is openly downloadable
-   and the anonymization systems are the public Voice Privacy Challenge
-   baselines B1 and B1.a. Anyone sufficiently motivated could compute equivalent
-   matrices themselves. The marginal disclosure is small.
+The justification is **derivability, not pseudonymity**:
+
+1. **Everything here follows from already-public inputs.** Common Voice 11.0 is
+   openly downloadable, the subset definitions are already on Zenodo, and the
+   anonymization systems are the public Voice Privacy Challenge baselines B1 and
+   B1.a. A motivated party can compute equivalent matrices without this release.
+   The marginal disclosure is the saved compute, not new information.
+2. **What that party would learn is mild.** At worst they can say how
+   re-identifiable a given Common Voice volunteer remains after anonymization.
+   That is an attribute of a public-corpus contributor, derived from audio they
+   chose to publish under CC-0.
 3. **The field already does this.** Voice Privacy Challenge artifacts routinely
    include embeddings and score files.
 4. **Reproducibility needs them.** Without the matrices, six of the nine panels
    of the paper's figure cannot be checked by anyone outside the authors.
 
-## The one thing that must not be released
+Point 1 is the load-bearing one. If a future release covers a corpus that is
+*not* public, none of this reasoning carries over and the decision has to be
+made again from scratch.
 
-**The mapping from these pseudonyms to Common Voice client ids.** That mapping,
-together with the matrices, would tie a biometric similarity profile to a
-specific public account and hence to downloadable audio of a real person. It
-lives in the experiment archive alongside everything else, so it has to be
-excluded deliberately rather than by accident.
+## What must not be released
+
+**The mapping from these pseudonyms to Common Voice client ids.** Publishing it
+turns a reconstructible link into a handed-over one, and there is no
+reproducibility argument for it: every curve in the paper can be recomputed
+without it. It sits in the experiment archive beside everything else, so it has
+to be excluded deliberately rather than by accident.
 
 The same goes for the x-vectors themselves and for any utterance-level file that
 carries Common Voice ids.
@@ -134,9 +158,19 @@ than an archival commitment.
 2. Confirm every line reports `exact=True`.
 3. Confirm the release directory contains **no** pseudonym-to-client-id mapping,
    no x-vectors, and no utterance-level Common Voice ids.
-4. Upload `release/` to Zenodo with this document's "What they let someone do"
-   section in the record description, so recipients are not misled about what
-   they are getting.
-5. Record the DOI and the `MANIFEST.json` checksums in
+4. Strip macOS AppleDouble sidecars before uploading. Writing to an external
+   volume creates a `._name` file beside every real one, and they will otherwise
+   be published as 4 KB of noise per matrix:
+   ```sh
+   dot_clean release/ || find release -name '._*' -delete
+   ```
+5. Upload `release/` to Zenodo as a **new version of the existing record**,
+   concept DOI [10.5281/zenodo.14976868](https://doi.org/10.5281/zenodo.14976868),
+   which already holds the subset file lists. One versioned record keeps the
+   subset definitions and the matrices under a single citable DOI.
+6. Put this document's "What they let someone do" and "Do not treat the
+   pseudonyms as a safeguard" sections in the record description, so recipients
+   are not misled about what they are getting.
+7. Record the version DOI and the `MANIFEST.json` checksums in
    [`reproduction.md`](reproduction.md).
-6. Optionally mirror to Hugging Face, pointing back at the DOI.
+8. Optionally mirror to Hugging Face, pointing back at the DOI.

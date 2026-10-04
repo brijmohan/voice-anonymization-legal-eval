@@ -6,13 +6,22 @@ cosine score matrices the paper's numbers came from, recomputes Linkability with
 the code in this package, and compares point by point against the published
 curves.
 
-Run with::
+Two layouts are supported.
+
+If you downloaded the published release, point at the directory holding
+``scores_<attacker>_L<length>.npy``, and the recomputed curves are compared
+against the published results shipped in ``data/paper_results/``::
+
+    python examples/03_verify_against_score_matrices.py --release-dir release/
+
+If you have the original experiment archive, point at it instead, and each
+condition is compared against its own per-condition results file::
 
     python examples/03_verify_against_score_matrices.py --root /path/to/IS25
 
-The score matrices are 832 MB each (22,024 x 4,949 float64) and are not in this
-repository. ``docs/reproduction.md`` says where to get them. Each condition is
-loaded, checked and freed in turn, so peak memory stays around 1 GB.
+The matrices are 436 MB each in the release (22,024 x 4,949 float32) and are not
+in this repository; ``docs/reproduction.md`` says where to get them. Each
+condition is loaded, checked and freed in turn, so peak memory stays near 1 GB.
 
 Expected result: mean absolute difference below 0.002 and worst case below 0.01
 at every point. The residual is Monte Carlo noise from averaging only five runs,
@@ -123,11 +132,54 @@ def check(root: Path, attacker: str, length: int, spec, n_runs: int, estimator: 
     return np.array(differences)
 
 
+def check_release(directory: Path, attacker: str, length: int, n_runs: int, estimator: str):
+    """Recompute one condition from the packaged release.
+
+    Compared against the published results shipped with this repository, which
+    is what someone who downloaded the release can check without any other
+    access.
+    """
+    from legal_eval.io import load_score_matrix
+    from legal_eval.paper import load_paper_results
+
+    path = directory / f"scores_{attacker}_L{length}.npy"
+    matrix = load_score_matrix(path)
+    beaters = count_beaters(matrix)
+
+    published = load_paper_results("linkability")["linkability"][length][attacker].mean()
+    differences = []
+    for count, expected in published.items():
+        if count > matrix.scores.shape[0]:
+            continue
+        observed = float(
+            np.mean(
+                linkability(
+                    matrix,
+                    n_enroll_speakers=count,
+                    n_runs=n_runs,
+                    seed=0,
+                    estimator=estimator,
+                    beaters=beaters,
+                )
+            )
+        )
+        differences.append(abs(observed - expected))
+
+    del matrix, beaters
+    gc.collect()
+    return np.array(differences)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--root", type=Path, required=True,
-        help="directory holding the cnil_linkability* experiment directories",
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument(
+        "--root", type=Path,
+        help="the original archive, holding the cnil_linkability* directories",
+    )
+    source.add_argument(
+        "--release-dir", type=Path,
+        help="the published release, holding scores_<attacker>_L<length>.npy",
     )
     parser.add_argument("--n-runs", type=int, default=5)
     parser.add_argument("--estimator", choices=("sampling", "exact"), default="sampling")
@@ -137,11 +189,12 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    if not args.root.is_dir():
-        print(f"{args.root} is not a directory", file=sys.stderr)
+    directory = args.release_dir if args.release_dir is not None else args.root
+    if not directory.is_dir():
+        print(f"{directory} is not a directory", file=sys.stderr)
         return 2
 
-    print(f"Recomputing Linkability from the score matrices in {args.root}")
+    print(f"Recomputing Linkability from the score matrices in {directory}")
     print(f"estimator={args.estimator}, runs={args.n_runs}, tolerance={args.tolerance}\n")
     print(f"{'attacker':<15}{'L':>4}{'points':>8}{'mean diff':>12}{'max diff':>11}  ")
     print("-" * 50)
@@ -151,10 +204,18 @@ def main() -> int:
     missing = []
     for attacker, by_length in CONDITIONS.items():
         for length, spec in by_length.items():
-            if not (args.root / spec[0] / spec[1]).exists():
-                missing.append(f"{attacker} L={length}")
-                continue
-            differences = check(args.root, attacker, length, spec, args.n_runs, args.estimator)
+            if args.release_dir is not None:
+                if not (directory / f"scores_{attacker}_L{length}.npy").exists():
+                    missing.append(f"{attacker} L={length}")
+                    continue
+                differences = check_release(
+                    directory, attacker, length, args.n_runs, args.estimator
+                )
+            else:
+                if not (directory / spec[0] / spec[1]).exists():
+                    missing.append(f"{attacker} L={length}")
+                    continue
+                differences = check(directory, attacker, length, spec, args.n_runs, args.estimator)
             worst = max(worst, float(differences.max()))
             checked += differences.size
             print(
@@ -166,7 +227,7 @@ def main() -> int:
     if missing:
         print(f"skipped (score matrix not found): {', '.join(missing)}")
     if not checked:
-        print("\nNothing was checked. Is --root pointing at the right directory?")
+        print("\nNothing was checked. Is the directory the right one?")
         return 2
 
     print(f"\n{checked} published points recomputed, worst difference {worst:.5f}")
