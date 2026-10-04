@@ -1,5 +1,9 @@
 # Releasing the score matrices
 
+> **Published.** [10.5281/zenodo.23142030](https://doi.org/10.5281/zenodo.23142030), version 2.0.0, CC-BY-4.0,
+> 27 files, 5.34 GB. Concept DOI [10.5281/zenodo.14976868](https://doi.org/10.5281/zenodo.14976868).
+> All 25 uploaded files verified byte-identical to the local copies.
+
 What the cosine score matrices contain, what they let someone do, and where they
 should live.
 
@@ -45,8 +49,8 @@ structure says so plainly.
 The matrix is the product of two sets of unit-norm embeddings, `S = X·Yᵀ`, so its
 rank is bounded by the embedding dimension rather than by its shape. Measured on
 a random 3,000 x 3,000 block, the singular value spectrum collapses by four
-orders of magnitude immediately after index **256** — exactly the x-vector
-dimension — and a rank-256 reconstruction reproduces the released scores to
+orders of magnitude immediately after index **256** (exactly the x-vector
+dimension), and a rank-256 reconstruction reproduces the released scores to
 within 2e-07, which is float32 rounding:
 
 ```
@@ -59,8 +63,8 @@ So the matrix is an inner-product representation of the embeddings. Factorising
 it recovers `X` and `Y` up to an invertible 256 x 256 transform; the unit-norm
 constraints on both factor sets over-determine that transform, so recovering the
 true geometry is an inverse problem rather than a barrier. (A plain SVD does
-*not* do it — the scale splits arbitrarily between the factors — but that is an
-inconvenience, not a protection.)
+*not* do it, because the scale splits arbitrarily between the factors, but that
+is an inconvenience rather than a protection.)
 
 Concretely, a recipient can:
 

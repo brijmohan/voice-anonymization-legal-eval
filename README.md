@@ -139,6 +139,18 @@ Figure 1: three metrics, three conversation lengths, four attacker models.
 `python examples/02_reproduce_paper_figures.py` redraws the figure from them and
 checks it against the values quoted in the paper's text.
 
+The twelve cosine score matrices those results come from are on Zenodo at
+**[10.5281/zenodo.23142030](https://doi.org/10.5281/zenodo.23142030)** (5.2 GB, CC-BY-4.0), together with the
+Common Voice subset definitions. With them you can recompute every Linkability
+and EER curve from scratch rather than taking the published numbers on trust:
+
+```sh
+pip install zenodo_get && zenodo_get 10.5281/zenodo.23142030 -o release/
+python examples/03_verify_against_score_matrices.py --release-dir release/
+```
+
+Read [`docs/data-release.md`](docs/data-release.md) before redistributing them.
+
 ## How we know it is right
 
 The implementation was checked against the original cosine score matrices the

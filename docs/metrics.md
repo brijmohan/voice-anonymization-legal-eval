@@ -9,7 +9,7 @@ produced them, since it already normalises.
 
 ## Singling Out, `π_sing`
 
-> *"it is not possible to single out an individual record"* — Opinion 05/2014
+> *"it is not possible to single out an individual record"* (Opinion 05/2014)
 
 Built on the predicate singling out (PSO) framework of Cohen and Nissim. The
 attacker holds one enrollment embedding `x_enroll` and a threshold, defining
@@ -19,7 +19,7 @@ p(x_test) = 1{ s(x_test, x_enroll) > s_thresh }
 ```
 
 Given a set `X` of `N` test embeddings, one per speaker, **isolation succeeds
-when the predicate fires on exactly one of them** — whether or not it is the
+when the predicate fires on exactly one of them**, whether or not it is the
 attacker's own speaker. That last clause matters: singling out is about carving
 one record out of a crowd, not about identifying whose record it is.
 
@@ -67,7 +67,7 @@ of a speaker therefore never share an utterance.
 
 ## Linkability, `π_link`
 
-> *"it is not possible to link records relating to the same individual"* — Opinion 05/2014
+> *"it is not possible to link records relating to the same individual"* (Opinion 05/2014)
 
 Linkage succeeds when the true enrollment speaker outscores every other candidate:
 
@@ -82,7 +82,7 @@ replacement from the enrollment population. Chance level is `1/N'`.
 > Sidekit's `Dsys`. Those measure the separation of mated and nonmated score
 > distributions; this one is a closed-set identification rate. The paper says so
 > in a footnote, and early versions of the internal code used the other
-> definition — see [provenance.md](provenance.md).
+> definition. See [provenance.md](provenance.md).
 
 ### Why the fast path is exact
 
@@ -166,7 +166,7 @@ naming differs from the VPC:
 | **Ignorant** | Unaware data is anonymized | Original speech | Ignorant |
 | **Semi-Informed** | Aware, but not of the exact system | A *similar* system's output (VPC 2022 B1.a) | no equivalent |
 | **Informed** | Full knowledge and access | The *same* system's output (VPC 2024 B1) | Semi-Informed |
-| *Original* | — | Original speech, tested on original speech | — |
+| *Original* | n/a | Original speech, tested on original speech | n/a |
 
 The *Informed* attacker is the worst case and is what a conservative compliance
 argument should be built on.

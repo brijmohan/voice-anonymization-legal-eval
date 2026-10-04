@@ -23,6 +23,22 @@ authors:
   - family-names: Vincent
     given-names: Emmanuel
     affiliation: "Université de Lorraine, CNRS, Inria, LORIA"
+references:
+  - type: data
+    title: >-
+      Score matrices and dataset definitions for "Legally validated evaluation
+      framework for voice anonymization" (Interspeech 2025)
+    doi: "10.5281/zenodo.23142030"
+    year: 2026
+    authors:
+      - family-names: Vauquier
+        given-names: Nathalie
+      - family-names: Srivastava
+        given-names: "Brij Mohan Lal"
+      - family-names: Hosseini
+        given-names: "Seyed Ahmad"
+      - family-names: Vincent
+        given-names: Emmanuel
 preferred-citation:
   type: conference-paper
   title: "Legally validated evaluation framework for voice anonymization"

@@ -13,7 +13,7 @@ scripts added. The relevant scripts:
 | `bin/kaldi/cnil_plot1.py` | `master` | Linkability, `L = 1` |
 | `bin/kaldi/cnil_plot2.py` | `master` | Linkability, `L ∈ {3, 10, 30}` |
 | `bin/kaldi/cnil_plot3.py` | `master` | Linkability for the worst-case speakers (CNIL report only) |
-| `PSO/compute_iso_for_plot2.py` | `pso` | Singling Out — the final, most evolved version |
+| `PSO/compute_iso_for_plot2.py` | `pso` | Singling Out, the final and most evolved version |
 | `PSO/compute_isolation_probabilities{,_parallel}.py` | `pso` | Earlier Singling Out versions |
 | `bin/kaldi/compute_metrics.py` | `master` | ROCCH-EER for a fixed trial list |
 
@@ -47,8 +47,8 @@ the paper's Section 5. All four reproduce:
 |---|---|
 | `L=1`, 20 speakers: 82% | 0.822 |
 | `L=1`, 10,000 speakers: 35% | 0.349 |
-| `L=3`, 20 speakers: 94–95% | 0.950 |
-| `L=30`, 20 speakers: 94–95% | 0.944 |
+| `L=3`, 20 speakers: 94 to 95% | 0.950 |
+| `L=30`, 20 speakers: 94 to 95% | 0.944 |
 
 The tidy CSVs covering all nine panels of the paper's figure come from the
 experiment archive, which also holds the 20 cosine score matrices (832 MB each),
@@ -114,5 +114,5 @@ pinned by properties and by independent oracles:
 
 ## Versions
 
-- `1.0.0` — a fabricated implementation that did not match the paper. Withdrawn.
-- `2.0.0` — this implementation. See [CHANGELOG.md](../CHANGELOG.md).
+- `1.0.0`: a fabricated implementation that did not match the paper. Withdrawn.
+- `2.0.0`: this implementation. See [CHANGELOG.md](../CHANGELOG.md).

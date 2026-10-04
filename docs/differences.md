@@ -108,7 +108,7 @@ brute-force oracle and against the analytic Gaussian EER.
 
 Differences against BOSARIS should be at the level of floating-point noise, since
 both compute the same quantity, but they have not been compared numerically
-head-to-head — doing so would require accepting the BOSARIS licence.
+head-to-head, because doing so would require accepting the BOSARIS licence.
 
 ## Reconstructed: the EER sweep
 
@@ -121,8 +121,8 @@ reference implementation to check against.
 ## Performance: hypergeometric sampling for Linkability
 
 Explicit candidate-set construction is replaced by an equivalent hypergeometric
-draw. The sampling distribution is identical — this is a change of algorithm, not
-of definition — and the equivalence is asserted in
+draw. The sampling distribution is identical (this is a change of algorithm, not
+of definition), and the equivalence is asserted in
 `tests/test_linkability.py`. See [metrics.md](metrics.md#why-the-fast-path-is-exact)
 for the derivation. `linkability_naive` keeps the literal version for testing.
 
@@ -136,5 +136,5 @@ produce a worse copy of code that already exists; see
 **The worst-case speaker analysis** (`cnil_plot3.py`), which ranks speakers by how
 far their true score sits above the best impostor and reports Linkability for the
 most exposed ones. It appears in the CNIL report, not in the Interspeech paper.
-The score-matrix layout here supports it — a speaker may label several columns —
+The score-matrix layout here supports it (a speaker may label several columns),
 but it is not implemented.

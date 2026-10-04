@@ -117,20 +117,70 @@ legal-eval demo                                # the whole pipeline on synthetic
 
 `examples/02` checks the shipped `data/paper_results/` against every Linkability
 value quoted in the paper's Section 5. The test suite pins the metrics against
-independent oracles and against their theoretical baselines — see
+independent oracles and against their theoretical baselines. See
 [provenance.md](provenance.md#how-correctness-was-established).
 
-## What is missing, and why
+## Getting the score matrices
 
-Only the **Original** condition's Linkability results survived in version
-control. The anonymized conditions, and all Singling Out and EER results, lived
-on the machines the experiments ran on. Fully redrawing the paper's figure
-therefore needs the cosine score matrices for each attacker and `L`.
+The twelve cosine score matrices are published on Zenodo:
 
-Those matrices are derived artefacts, far smaller than the x-vectors and much
-less identity-bearing, and are the intended release vehicle. When they are
-published they will be listed here with checksums, and
-`examples/02_reproduce_paper_figures.py` will extend to cover all nine panels.
+**[10.5281/zenodo.23142030](https://doi.org/10.5281/zenodo.23142030)** (concept DOI [10.5281/zenodo.14976868](https://doi.org/10.5281/zenodo.14976868),
+which always resolves to the newest version)
+
+5.2 GB total, 436 MB per matrix, 22,024 x 4,949 float32, CC-BY-4.0. The record
+also carries the `cv11-A-filelist` and `cv11-B-filelist` defining the two
+Common Voice subsets.
+
+```sh
+pip install zenodo_get
+zenodo_get 10.5281/zenodo.23142030 -o release/
+
+# or fetch a single condition
+curl -LO https://zenodo.org/records/23142030/files/scores_informed_L1.npy
+curl -LO https://zenodo.org/records/23142030/files/scores_informed_L1.npy.json
+```
+
+Verify the download, then check it reproduces the paper:
+
+```sh
+python -c "
+import hashlib, json, sys
+man = json.load(open('release/MANIFEST.json'))
+for f in man['files']:
+    h = hashlib.sha256()
+    for b in iter(lambda fh=open('release/'+f['file'],'rb'): fh.read(1<<20), b''):
+        h.update(b)
+    assert h.hexdigest() == f['sha256'], f['file']
+print('all checksums match')
+"
+
+python examples/03_verify_against_score_matrices.py --release-dir release/
+```
+
+The second command recomputes all 2,640 published Linkability points and should
+report a worst-case difference near 0.005.
+
+### SHA-256 checksums
+
+| File | Attacker | L | SHA-256 |
+|---|---|---|---|
+| `scores_ignorant_L1.npy` | ignorant | 1 | `81f635fb55fd8e76…` |
+| `scores_ignorant_L3.npy` | ignorant | 3 | `0d9f83942c640c29…` |
+| `scores_ignorant_L30.npy` | ignorant | 30 | `1a7426d1da897fae…` |
+| `scores_informed_L1.npy` | informed | 1 | `2cb11eea939aff4f…` |
+| `scores_informed_L3.npy` | informed | 3 | `5afe70475c080ea5…` |
+| `scores_informed_L30.npy` | informed | 30 | `304f96134d0713d8…` |
+| `scores_original_L1.npy` | original | 1 | `56a93fc1698eeec0…` |
+| `scores_original_L3.npy` | original | 3 | `1a39c72214fe35d8…` |
+| `scores_original_L30.npy` | original | 30 | `4500f4c0f08af9f4…` |
+| `scores_semi_informed_L1.npy` | semi_informed | 1 | `a2e95417c03b2e52…` |
+| `scores_semi_informed_L3.npy` | semi_informed | 3 | `77ed25a9945f78a6…` |
+| `scores_semi_informed_L30.npy` | semi_informed | 30 | `8fc59718dbfc9b4f…` |
+
+Full digests are in `MANIFEST.json` on the record. Before using these, read
+[`data-release.md`](data-release.md): the matrices encode more about speaker
+identity than their name suggests, and the pseudonymous labels are not a
+safeguard.
 
 ## Evaluating your own system
 
