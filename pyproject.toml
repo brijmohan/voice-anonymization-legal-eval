@@ -72,11 +72,13 @@ testpaths = ["tests"]
 filterwarnings = [
     # Our own warnings are bugs; fail on them.
     "error",
-    # Third-party noise we cannot fix. Older matplotlib, which is what Python
-    # 3.9 resolves to, calls pyparsing APIs that pyparsing has since renamed,
-    # both at import and while parsing mathtext. Every one of those compat
-    # shims warns with the same phrasing.
-    "ignore:.*deprecated - use .*:DeprecationWarning",
+    # Third-party noise we cannot fix, and cannot usefully enumerate. Older
+    # matplotlib, which is what Python 3.9 resolves to, calls a range of
+    # pyparsing APIs that pyparsing has since renamed: at import, and again
+    # whenever mathtext is parsed for an axis label. Ignore the category rather
+    # than chasing each message. pyparsing ships with matplotlib, which the dev
+    # extra installs, so the category always resolves when the suite runs.
+    "ignore::pyparsing.warnings.PyparsingDeprecationWarning",
 ]
 
 [tool.ruff]
