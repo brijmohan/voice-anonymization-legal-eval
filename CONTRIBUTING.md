@@ -1,133 +1,54 @@
-# Contributing to Voice Anonymization Legal Evaluation Framework
+# Contributing
 
-Thank you for your interest in contributing to the legally validated voice anonymization evaluation framework! This document provides guidelines for contributing to the project.
+## Setup
 
-## Overview
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+pytest -q
+ruff check legal_eval tests examples
+```
 
-This framework implements legally validated evaluation metrics for voice anonymization systems, based on the Article 29 Working Party's Opinion 05/2014 on Anonymization Techniques. We welcome contributions that improve the framework's accuracy, usability, and comprehensiveness.
+## What this repository is for
 
-## How to Contribute
+It implements the metrics from one paper. The bar for changes is whether they
+make the evaluation more correct, more reproducible, or easier to apply to a new
+system — not whether they add features.
 
-### 1. Reporting Issues
+Out of scope: anonymization systems, embedding extractors, and model training.
+Those belong upstream, in the Voice Privacy Challenge and Sidekit repositories.
+See [`docs/reproduction.md`](docs/reproduction.md).
 
-Before creating a new issue, please:
+## Changing a metric
 
-- Check if the issue has already been reported
-- Use the appropriate issue template
-- Provide detailed information including:
-  - Description of the problem
-  - Steps to reproduce
-  - Expected vs actual behavior
-  - Environment details (OS, Python version, etc.)
-  - Error messages or logs
+Anything that changes a computed number needs:
 
-### 2. Suggesting Enhancements
+1. A test pinning the new behaviour, ideally against an independent oracle or a
+   theoretical baseline rather than against the current output.
+2. An entry in [`docs/differences.md`](docs/differences.md) if it diverges from
+   the original experiment code, with the original behaviour reachable by a flag
+   when it affects published results.
+3. A note in [`CHANGELOG.md`](CHANGELOG.md).
 
-We welcome suggestions for new features and improvements. When suggesting enhancements:
+The existing tests are the model: Singling Out is pinned to the `exp(-1)` PSO
+baseline, Linkability to a literal sampling implementation, ROCCH-EER to a
+brute-force oracle. A test that only asserts the code returns what it currently
+returns is not much of a test.
 
-- Clearly describe the proposed feature
-- Explain the motivation and use case
-- Consider the legal and privacy implications
-- Provide examples if possible
+## Style
 
-### 3. Code Contributions
+- Google-style docstrings on anything public, stating what a number *means*, not
+  just its type.
+- Comments explain why, not what. If a line encodes a decision from the paper or
+  a deliberate departure from it, say so there.
+- `ruff check` must pass. Line length 100.
+- Keep the core dependency set to NumPy and SciPy; anything else goes in an
+  optional extra.
 
-#### Setting Up Development Environment
+## Reporting a discrepancy
 
-1. Fork the repository
-2. Clone your fork locally
-3. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-4. Install development dependencies:
-   ```bash
-   pip install -r requirements.txt
-   pip install -e .
-   ```
-
-#### Development Guidelines
-
-- **Code Style**: Follow PEP 8 guidelines
-- **Type Hints**: Use type hints for all function parameters and return values
-- **Documentation**: Add docstrings for all public functions and classes
-- **Testing**: Write tests for new functionality
-- **Commits**: Use descriptive commit messages
-
-#### Pull Request Process
-
-1. Create a feature branch from `main`
-2. Make your changes
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Update documentation if needed
-6. Submit a pull request with a clear description
-
-### 4. Documentation
-
-We welcome contributions to improve documentation:
-
-- Fix typos and clarify unclear sections
-- Add examples and tutorials
-- Improve API documentation
-- Update installation instructions
-
-## Areas for Contribution
-
-### High Priority
-
-- **Real anonymization system implementations**: Implement actual Baseline B1 and B1.a anonymization systems
-- **Speaker embedding models**: Add support for more speaker recognition models
-- **Data loading utilities**: Implement robust data loading for common speech datasets
-- **Visualization tools**: Create plotting utilities for evaluation results
-
-### Medium Priority
-
-- **Additional metrics**: Implement inference attack metrics
-- **Performance optimization**: Improve computational efficiency
-- **Configuration management**: Enhance configuration system
-- **Error handling**: Improve error messages and recovery
-
-### Low Priority
-
-- **GUI interface**: Create a web-based interface
-- **Docker support**: Add containerization
-- **CI/CD pipeline**: Set up automated testing and deployment
-
-## Legal and Privacy Considerations
-
-When contributing to this framework:
-
-- Ensure compliance with data protection regulations
-- Respect privacy rights and ethical considerations
-- Follow responsible disclosure practices for security issues
-- Consider the potential misuse of anonymization evaluation tools
-
-## Code of Conduct
-
-We are committed to providing a welcoming and inclusive environment for all contributors. Please:
-
-- Be respectful and considerate of others
-- Use inclusive language
-- Focus on constructive feedback
-- Respect different viewpoints and experiences
-
-## Getting Help
-
-If you need help with contributing:
-
-- Check the documentation
-- Search existing issues and discussions
-- Ask questions in the issue tracker
-- Contact the maintainers directly
-
-## Recognition
-
-Contributors will be recognized in:
-
-- The project's README file
-- Release notes
-- Academic publications (when appropriate)
-
-Thank you for contributing to making voice anonymization evaluation more robust and legally compliant!
+If a number here disagrees with the paper, that is worth an issue even without a
+fix. Please include the metric, `L`, the population size, the attacker, and what
+you expected. One such discrepancy is already known and documented: the number of
+enrollment utterances averaged for Singling Out, where the paper says 30 and the
+final internal script used 10.

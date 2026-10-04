@@ -1,223 +1,181 @@
-# Voice Anonymization Legal Evaluation Framework
+# Legally validated evaluation framework for voice anonymization
 
-This repository implements the legally validated evaluation framework for voice anonymization systems, as described in the paper "Legally validated evaluation framework for voice anonymization" (Interspeech 2025). The framework introduces two key metrics that align with legal requirements for data anonymization:
+Reference implementation of the **Singling Out** and **Linkability** metrics from:
 
-## Overview
+> N. Vauquier, B. M. L. Srivastava, S. A. Hosseini, E. Vincent.
+> *Legally validated evaluation framework for voice anonymization.*
+> Interspeech 2025.
+> [[paper]](https://www.isca-archive.org/interspeech_2025/vauquier25_interspeech.html)
 
-The framework addresses the critical gap between conventional evaluation metrics (like EER) and legally required assessment of re-identification risk in voice anonymization. It implements two legally grounded metrics:
+The two metrics turn the *singling out* and *linkability* criteria of the
+Article 29 Working Party's [Opinion 05/2014 on Anonymization
+Techniques](https://ec.europa.eu/justice/article-29/documentation/opinion-recommendation/files/2014/wp216_en.pdf),
+endorsed by the European Data Protection Board, into quantities you can measure
+on speech. The framework was formally validated by the French Data Protection
+Authority (CNIL).
 
-1. **Singling Out**: Measures the probability that an attacker can isolate a single speaker from anonymized speech samples
-2. **Linkability**: Measures the probability that anonymized speech samples can be correctly linked to the corresponding enrollment speaker
+The motivating finding: **the equal error rate is close to blind to residual
+re-identification risk.** Across attacker models and conversation lengths the EER
+barely moves, while Linkability and Singling Out move a great deal.
 
-These metrics have been formally validated by the French Data Protection Authority (CNIL) and provide a legally compliant assessment of voice anonymization systems.
+> [!IMPORTANT]
+> This repository was previously published with code that did not implement the
+> paper. Version 2.0.0 replaces it in full. See [CHANGELOG.md](CHANGELOG.md).
 
-## Key Features
-
-- **Legally Validated Metrics**: Based on Article 29 Working Party's Opinion 05/2014 on Anonymization Techniques
-- **Multiple Attack Scenarios**: Supports Ignorant, Semi-Informed, and Informed attacker models
-- **Robust Evaluation Framework**: Includes random sampling, threshold calibration, and statistical averaging
-- **Comprehensive Documentation**: Detailed implementation guide and usage examples
-- **Reproducible Results**: Complete evaluation pipeline with configurable parameters
-
-## Installation
+## Install
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/voice-anonymization-legal-eval.git
-cd voice-anonymization-legal-eval
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+pip install -e ".[all]"      # or: pip install -e .  for the numpy/scipy core
 ```
 
-## Quick Start
+Python 3.9 or newer. The core needs only NumPy and SciPy; `h5py` is needed to
+read HDF5 x-vector files, `matplotlib` to draw figures.
+
+## Try it in 30 seconds
+
+```bash
+legal-eval demo --output-dir demo_output
+```
+
+That builds a synthetic corpus, simulates two degrees of anonymization, computes
+all three metrics across population sizes and conversation lengths, and writes a
+figure. No data, no GPU, no model. For the same thing as readable code, see
+[`examples/01_quickstart.py`](examples/01_quickstart.py).
+
+To redraw the paper's published curves and check them against the values quoted
+in its text:
+
+```bash
+python examples/02_reproduce_paper_figures.py --output-dir figures
+```
+
+## What this package does, and what it does not
+
+This package evaluates **speaker embeddings**. It takes x-vectors (or any other
+speaker embeddings) and computes the re-identification risk they carry.
+
+It does **not** anonymize speech and does not train embedding extractors. Those
+are upstream steps, done with the toolkits the paper used, and re-implementing
+them here would only produce a worse copy. [`docs/reproduction.md`](docs/reproduction.md)
+pins the exact external systems and versions.
+
+```
+ speech ──▶ anonymization ──▶ x-vector extraction ──▶  THIS PACKAGE
+            (VPC B1/B1.a)      (Sidekit ECAPA-TDNN)    Singling Out
+            external            external                Linkability
+                                                        ROCCH-EER
+```
+
+To evaluate your own system: anonymize your audio, extract embeddings with your
+attacker's extractor, and point this package at them. The metrics do not care
+how the embeddings were produced.
+
+## The metrics
+
+| Metric | Question it answers | Chance level |
+|---|---|---|
+| **Singling Out** `π_sing` | Can an attacker isolate exactly one speaker out of `N`? | `exp(-1) ≈ 37%` |
+| **Linkability** `π_link` | Can an attacker match a test recording to the right speaker among `N'`? | `1/N'` |
+| **ROCCH-EER** | The conventional speaker-verification baseline, plotted as `1 - EER`. | `50%` |
+
+Both legal metrics are reported against the number of speakers the attacker must
+search and against the conversation length `L`, the number of utterances averaged
+per speaker. [`docs/metrics.md`](docs/metrics.md) gives the definitions, the
+calibration rule and the correspondence to the paper's equations.
+
+## Using it on your own data
+
+Point it at Kaldi-style directories, each holding a `spk2utt` file and an
+`xvector.h5` with one dataset per utterance id:
+
+```bash
+# Linkability and EER: enrollment set A, test set B
+legal-eval score-matrix --enroll-dir data/cv11-A --test-dir data/cv11-B \
+    --conversation-length 1 --attacker informed --output scores/informed_L1.npy
+
+legal-eval linkability --score-matrix scores/informed_L1.npy \
+    --output results/linkability_informed_L1.json
+legal-eval eer --score-matrix scores/informed_L1.npy \
+    --output results/eer_informed_L1.json
+
+# Singling Out: the roles of A and B swap, per the paper
+legal-eval singling-out --enroll-dir data/cv11-B --test-dir data/cv11-A \
+    --conversation-length 1 --attacker informed \
+    --output results/singling_out_informed_L1.json
+
+legal-eval plot --results-dir results --output figures/paper_figure.pdf
+```
+
+Or from Python:
 
 ```python
-from legal_eval import LegalEvaluator
-from legal_eval.metrics import SinglingOutMetric, LinkabilityMetric
-
-# Initialize evaluator
-evaluator = LegalEvaluator(
-    anonymization_system="baseline_b1",
-    speaker_embedding_model="ecapa_tdnn"
+from legal_eval import (
+    build_speaker_embeddings, build_test_embeddings,
+    cosine_score_matrix, linkability_sweep,
 )
 
-# Compute Singling Out metric
-singling_out = SinglingOutMetric()
-singling_out_score = singling_out.compute(
-    test_embeddings=test_xvectors,
-    enrollment_embeddings=enrollment_xvectors,
-    calibration_embeddings=calibration_xvectors
-)
+enroll = build_speaker_embeddings(enroll_spk2utt, utt2xvector)
+test, _ = build_test_embeddings(test_spk2utt, utt2xvector, conversation_length=3)
+scores = cosine_score_matrix(enroll, test)
 
-# Compute Linkability metric
-linkability = LinkabilityMetric()
-linkability_score = linkability.compute(
-    test_embeddings=test_xvectors,
-    enrollment_embeddings=enrollment_xvectors
-)
-
-print(f"Singling Out Risk: {singling_out_score:.3f}")
-print(f"Linkability Risk: {linkability_score:.3f}")
+result = linkability_sweep(scores, speaker_counts=[20, 100, 1000, 10000])
+print(result.mean())
 ```
 
-## Metrics Description
+## Reproducing the paper
 
-### Singling Out Metric
+The full pipeline needs roughly 1,700 hours of anonymized Common Voice and three
+trained x-vector extractors, so it is not something to re-run casually.
+[`docs/reproduction.md`](docs/reproduction.md) sets out what is needed at each
+stage and what this repository can verify on its own.
 
-The Singling Out metric implements the Predicate Singling Out (PSO) framework to quantify the risk that an attacker can isolate an individual from an anonymized dataset. It computes:
+`data/paper_results/` ships the original experiment's Linkability results for the
+*Original* condition at `L ∈ {1, 3, 10, 30}`, across 220 population sizes and 5
+runs. These reproduce every Linkability value quoted in the paper.
 
-```
-π^sing = Pr_{X,x^enroll}{∃i s.t. p(x^test_i) = 1 and p(x^test_j) = 0 ∀j≠i}
-```
+## Differences from the original experiment code
 
-where the predicate function is defined as:
-```
-p(x^test) = 𝟙{s(x^test, x^enroll) > s^thresh}
-```
+The implementation here is faithful in its mathematics and corrects three
+reproducibility defects in the internal scripts: an RNG-sharing bug across
+parallel workers, a fold loop that silently reused one data split, and the use of
+`random.sample` on a set, which has been an error since Python 3.11. Each is
+documented, and the original behaviour remains reachable by a flag where it
+affects results. See [`docs/differences.md`](docs/differences.md).
 
-### Linkability Metric
+Linkability also runs far faster here. Explicit candidate-set sampling is
+replaced by an equivalent hypergeometric draw, which collapses the paper's full
+sweep from hours to seconds without changing the sampling distribution. The
+derivation is in [`docs/metrics.md`](docs/metrics.md) and the equivalence is
+asserted in the test suite.
 
-The Linkability metric measures the probability that an attacker can correctly match anonymized speech samples with the corresponding enrollment speaker:
+## Tests
 
-```
-π^link = Pr_{x_i^test}{s(x_i^test, x_i^enroll) > max_{j≠i} s(x_i^test, x_j^enroll)}
-```
-
-## Attack Models
-
-The framework supports three attacker models with varying levels of knowledge:
-
-1. **Ignorant Attacker**: Unaware that data is anonymized, trains on original data
-2. **Semi-Informed Attacker**: Aware of anonymization but uses outdated system
-3. **Informed Attacker**: Has full knowledge of the anonymization process (worst-case scenario)
-
-## Usage Examples
-
-### Basic Evaluation
-
-```python
-from legal_eval import run_evaluation
-
-# Run complete evaluation
-results = run_evaluation(
-    test_data="path/to/test/data",
-    enrollment_data="path/to/enrollment/data",
-    anonymization_system="baseline_b1",
-    conversation_lengths=[1, 3, 30],
-    speaker_counts=[20, 100, 1000, 10000]
-)
-
-# Print results
-for metric, scores in results.items():
-    print(f"{metric}: {scores}")
+```bash
+pytest -q
 ```
 
-### Custom Anonymization System
+The suite pins behaviour rather than just exercising it:
 
-```python
-from legal_eval import LegalEvaluator
-from legal_eval.anonymization import BaseAnonymizer
-
-class CustomAnonymizer(BaseAnonymizer):
-    def anonymize(self, audio_data):
-        # Implement your anonymization logic
-        return anonymized_audio
-
-evaluator = LegalEvaluator(
-    anonymization_system=CustomAnonymizer(),
-    speaker_embedding_model="ecapa_tdnn"
-)
-```
-
-## Configuration
-
-The framework can be configured through a YAML configuration file:
-
-```yaml
-# config.yaml
-evaluation:
-  conversation_lengths: [1, 3, 30]
-  speaker_counts: [20, 100, 1000, 10000]
-  num_runs: 5
-  num_folds: 10
-
-anonymization:
-  system: "baseline_b1"
-  parameters:
-    candidate_count: 100
-    random_seed: 42
-
-speaker_embedding:
-  model: "ecapa_tdnn"
-  extractor_path: "models/ecapa_tdnn.pth"
-  sample_rate: 16000
-  frame_length: 0.025
-  frame_shift: 0.010
-
-attack_models:
-  - "ignorant"
-  - "semi_informed"
-  - "informed"
-```
-
-## Dataset Requirements
-
-The framework expects the following data structure:
-
-```
-data/
-├── test/
-│   ├── speaker_1/
-│   │   ├── utterance_1.wav
-│   │   ├── utterance_2.wav
-│   │   └── ...
-│   └── speaker_2/
-├── enrollment/
-│   ├── speaker_1/
-│   └── speaker_2/
-└── calibration/
-    ├── speaker_1/
-    └── speaker_2/
-```
-
-## Results Interpretation
-
-- **Lower values indicate better privacy protection**
-- **Singling Out**: Values close to 37% (baseline) indicate good protection
-- **Linkability**: Values close to 1/N (chance level) indicate good protection
-- **Compare across different attack models** to assess robustness
-- **Consider conversation length effects** on privacy risk
+- Singling Out: an uninformative attacker isolates at `exp(-1)`, the PSO baseline.
+- Linkability: the fast estimator matches literal candidate-set sampling.
+- ROCCH-EER: matches a brute-force search over randomised decision rules, and the
+  analytic EER of separated Gaussians.
+- Both legal metrics respond to conversation length while the EER stays flat.
 
 ## Citation
 
-If you use this framework in your research, please cite:
-
 ```bibtex
-@inproceedings{nijta2025legally,
-  title={Legally validated evaluation framework for voice anonymization},
-  author={Vauquier, Nathalie and Srivastava, Brij Mohan Lal and Hosseini, Seyed Ahmad and Vincent, Emmanuel},
-  booktitle={Interspeech},
-  year={2025}
+@inproceedings{vauquier25_interspeech,
+  title     = {Legally validated evaluation framework for voice anonymization},
+  author    = {Nathalie Vauquier and Brij Mohan Lal Srivastava and
+               Seyed Ahmad Hosseini and Emmanuel Vincent},
+  booktitle = {Interspeech 2025},
+  year      = {2025},
 }
 ```
 
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-This work was supported by NIJTA SAS and builds upon the Voice Privacy Challenge framework.
-
-## Contact
-
-For questions and support, please open an issue on GitHub or contact the maintainers.
+MIT, see [LICENSE](LICENSE). The ROCCH-EER here is an independent implementation;
+the BOSARIS toolkit used in the original experiments is licensed for
+non-commercial use only and is deliberately not vendored.

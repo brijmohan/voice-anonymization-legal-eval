@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "Legally validated evaluation framework for voice anonymization"
+abstract: >-
+  Reference implementation of the Singling Out and Linkability metrics, which
+  translate the singling out and linkability criteria of the Article 29 Working
+  Party's Opinion 05/2014 on Anonymization Techniques into quantitative metrics
+  for speech data.
+type: software
+license: MIT
+repository-code: "https://github.com/brijmohan/voice-anonymization-legal-eval"
+version: 2.0.0
+authors:
+  - family-names: Vauquier
+    given-names: Nathalie
+    affiliation: "Nijta SAS"
+  - family-names: Srivastava
+    given-names: "Brij Mohan Lal"
+    affiliation: "Nijta SAS"
+  - family-names: Hosseini
+    given-names: "Seyed Ahmad"
+    affiliation: "Nijta SAS"
+  - family-names: Vincent
+    given-names: Emmanuel
+    affiliation: "Université de Lorraine, CNRS, Inria, LORIA"
+preferred-citation:
+  type: conference-paper
+  title: "Legally validated evaluation framework for voice anonymization"
+  year: 2025
+  collection-title: "Interspeech 2025"
+  url: "https://www.isca-archive.org/interspeech_2025/vauquier25_interspeech.html"
+  authors:
+    - family-names: Vauquier
+      given-names: Nathalie
+    - family-names: Srivastava
+      given-names: "Brij Mohan Lal"
+    - family-names: Hosseini
+      given-names: "Seyed Ahmad"
+    - family-names: Vincent
+      given-names: Emmanuel

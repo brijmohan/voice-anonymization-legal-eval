@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check legal_eval tests
+      - name: Test
+        run: pytest -q --cov=legal_eval --cov-report=term-missing
+      - name: Reproduce the published reference curves
+        run: python examples/02_reproduce_paper_figures.py --output-dir /tmp/figures
+      - name: End-to-end demo
+        run: legal-eval demo --output-dir /tmp/demo

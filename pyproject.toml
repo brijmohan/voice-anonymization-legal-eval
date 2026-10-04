@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voice-anonymization-legal-eval"
+version = "2.0.0"
+description = "Legally validated evaluation framework for voice anonymization (Interspeech 2025)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Nathalie Vauquier" },
+    { name = "Brij Mohan Lal Srivastava", email = "brij@nijta.com" },
+    { name = "Seyed Ahmad Hosseini" },
+    { name = "Emmanuel Vincent" },
+]
+keywords = [
+    "voice anonymization",
+    "speaker anonymization",
+    "privacy",
+    "GDPR",
+    "singling out",
+    "linkability",
+    "speech",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Security",
+]
+dependencies = [
+    "numpy>=1.21",
+    "scipy>=1.7",
+]
+
+[project.optional-dependencies]
+# Reading the HDF5 x-vector files the extraction toolkits write.
+hdf5 = ["h5py>=3.1"]
+plot = ["matplotlib>=3.4"]
+progress = ["tqdm>=4.62"]
+all = ["h5py>=3.1", "matplotlib>=3.4", "tqdm>=4.62"]
+dev = [
+    "h5py>=3.1",
+    "matplotlib>=3.4",
+    "tqdm>=4.62",
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/brijmohan/voice-anonymization-legal-eval"
+Paper = "https://www.isca-archive.org/interspeech_2025/vauquier25_interspeech.html"
+Issues = "https://github.com/brijmohan/voice-anonymization-legal-eval/issues"
+
+[project.scripts]
+legal-eval = "legal_eval.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["legal_eval*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["error"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4"]
+ignore = ["E501"]
