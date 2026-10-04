@@ -50,16 +50,51 @@ the paper's Section 5. All four reproduce:
 | `L=3`, 20 speakers: 94–95% | 0.950 |
 | `L=30`, 20 speakers: 94–95% | 0.944 |
 
-**The anonymized conditions were never committed.** The result files for the
-Informed, Semi-Informed and Ignorant attackers, and all Singling Out and EER
-results, existed only on the machines the experiments ran on. Regenerating those
-rows requires the cosine score matrices; see [reproduction.md](reproduction.md).
+The tidy CSVs covering all nine panels of the paper's figure come from the
+experiment archive, which also holds the 20 cosine score matrices (832 MB each),
+the per-attacker result JSONs, and the raw PSO isolation outcomes. None of that
+was ever committed to version control.
 
 ## How correctness was established
 
-Without the original x-vectors, agreement with the published curves can only be
-checked for the Original Linkability condition. The rest is pinned by properties
-and by independent oracles:
+### Against the original score matrices
+
+The strongest check: the cosine score matrices the paper's numbers came from
+were recovered from the experiment archive, and every published Linkability
+point was recomputed with this implementation.
+
+| attacker | L | points | mean abs. diff | worst diff |
+|---|---|---|---|---|
+| original | 1 / 3 / 30 | 220 each | 0.0011 / 0.0009 / 0.0006 | 0.0049 / 0.0030 / 0.0034 |
+| informed | 1 / 3 / 30 | 220 each | 0.0010 / 0.0011 / 0.0008 | 0.0051 / 0.0037 / 0.0029 |
+| semi-informed | 1 / 3 / 30 | 220 each | 0.0003 / 0.0007 / 0.0008 | 0.0038 / 0.0039 / 0.0040 |
+| ignorant | 1 / 3 / 30 | 220 each | 0.0002 / 0.0004 / 0.0006 | 0.0015 / 0.0023 / 0.0026 |
+
+2,640 points, worst disagreement 0.0051, correlation above 0.9987 everywhere.
+The residual is Monte Carlo noise from averaging five runs, and shrinks under the
+`exact` estimator. Each condition's full 220-point sweep takes about 0.6 seconds.
+
+Reproduce with `python examples/03_verify_against_score_matrices.py --root <dir>`.
+
+This also confirms the attacker-to-experiment mapping, which the directory names
+do not make obvious:
+
+| Attacker | Experiment directory suffix |
+|---|---|
+| Original | `cnil_linkability`, `cnil_linkability_plot2` |
+| Informed | `_plot1_anon`, `_plot2_anon` |
+| Semi-Informed | `_ATTACKED_BY_am_nsf_dense_random__CNIL202310` |
+| Ignorant | `_ATTACKED_BY_IGNORANT__CNIL202310` |
+
+`am_nsf` is the acoustic model plus neural source-filter vocoder of VPC 2022
+B1.a, which is what the paper's Semi-Informed attacker trains on. Note that an
+`_ATTACKED_BY_IGNORANT_v2_` directory also exists; the published curves come
+from the one without `v2`.
+
+### Against oracles and baselines
+
+Singling Out and the EER have no surviving per-point reference, so they are
+pinned by properties and by independent oracles:
 
 - **Singling Out.** An attacker whose predicate carries no information about the
   data isolates at `exp(-1)`. This is the PSO baseline the entire metric is read

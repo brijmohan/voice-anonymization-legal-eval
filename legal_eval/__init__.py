@@ -38,6 +38,7 @@ from legal_eval.metrics import (
     rocch_eer,
     singling_out,
 )
+from legal_eval.paper import PublishedCurve, load_paper_results
 from legal_eval.scoring import cosine_score_matrix
 from legal_eval.sweeps import (
     SweepResult,
@@ -57,6 +58,7 @@ __all__ = [
     "l2_normalize",
     "linkability",
     "linkability_sweep",
+    "load_paper_results",
     "load_score_matrix",
     "load_spk2utt",
     "load_xvectors",
@@ -65,6 +67,7 @@ __all__ = [
     "save_score_matrix",
     "singling_out",
     "singling_out_sweep",
+    "PublishedCurve",
     "SweepResult",
     "write_results",
 ]

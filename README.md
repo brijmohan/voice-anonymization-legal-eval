@@ -129,9 +129,34 @@ trained x-vector extractors, so it is not something to re-run casually.
 [`docs/reproduction.md`](docs/reproduction.md) sets out what is needed at each
 stage and what this repository can verify on its own.
 
-`data/paper_results/` ships the original experiment's Linkability results for the
-*Original* condition at `L ∈ {1, 3, 10, 30}`, across 220 population sizes and 5
-runs. These reproduce every Linkability value quoted in the paper.
+`data/paper_results/` ships the values behind all nine panels of the paper's
+Figure 1: three metrics, three conversation lengths, four attacker models.
+`python examples/02_reproduce_paper_figures.py` redraws the figure from them and
+checks it against the values quoted in the paper's text.
+
+## How we know it is right
+
+The implementation was checked against the original cosine score matrices the
+paper's numbers came from. Every published Linkability point, across all four
+attacker models and all three conversation lengths, was recomputed:
+
+| | |
+|---|---|
+| Published points recomputed | **2,640** |
+| Mean absolute difference | **0.0007** |
+| Worst difference at any point | **0.005** |
+| Correlation with published | **> 0.9987** |
+
+The residual is Monte Carlo noise from averaging only five runs; it shrinks
+further with `--estimator exact`. Reproduce it with
+[`examples/03_verify_against_score_matrices.py`](examples/03_verify_against_score_matrices.py)
+once you have the score matrices.
+
+Each full condition takes **0.6 seconds**, against hours for the original code.
+
+The metrics are additionally pinned by independent oracles and theoretical
+baselines rather than by their own past output; see
+[`docs/provenance.md`](docs/provenance.md#how-correctness-was-established).
 
 ## Differences from the original experiment code
 
