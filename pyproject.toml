@@ -50,6 +50,9 @@ dependencies = [
 hdf5 = ["h5py>=3.1"]
 plot = ["matplotlib>=3.4"]
 progress = ["tqdm>=4.62"]
+# Reading VoicePrivacy Challenge embedding caches, which are torch tensors.
+# Always present in a VPC environment, so this is only for use outside one.
+vpc = ["torch>=1.9"]
 all = ["h5py>=3.1", "matplotlib>=3.4", "tqdm>=4.62"]
 dev = [
     "h5py>=3.1",

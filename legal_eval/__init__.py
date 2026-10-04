@@ -46,10 +46,15 @@ from legal_eval.sweeps import (
     linkability_sweep,
     singling_out_sweep,
 )
+from legal_eval.vpc import (
+    benchmark_vpc_run,
+    load_vpc_embeddings,
+)
 
 __all__ = [
     "__version__",
     "average_embeddings",
+    "benchmark_vpc_run",
     "build_conversations",
     "build_speaker_embeddings",
     "build_test_embeddings",
@@ -60,6 +65,7 @@ __all__ = [
     "linkability_sweep",
     "load_paper_results",
     "load_score_matrix",
+    "load_vpc_embeddings",
     "load_spk2utt",
     "load_xvectors",
     "read_results",

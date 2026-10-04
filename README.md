@@ -134,6 +134,23 @@ result = linkability_sweep(scores, speaker_counts=[20, 100, 1000, 10000])
 print(result.mean())
 ```
 
+## VoicePrivacy Challenge
+
+The metrics run directly on a VPC 2026 evaluation, reusing the speaker
+embeddings its ASV step already caches. No model, no GPU, no second pass over
+audio:
+
+```sh
+pip install "voice-anonymization-legal-eval[vpc]"
+legal-eval vpc --results-dir exp/asv_anon_mcadams \
+    --distractors train-clean-360_mcadams --output results/legal_mcadams.csv
+```
+
+See [`docs/vpc-benchmark.md`](docs/vpc-benchmark.md), which also covers the two
+things to get right before publishing a comparison: VPC's evaluation sets hold
+far fewer speakers than the paper's, and the VPC repo already uses the name
+"linkability" for a different quantity.
+
 ## Reproducing the paper
 
 The full pipeline needs roughly 1,700 hours of anonymized Common Voice and three

@@ -329,6 +329,41 @@ def cmd_demo(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_vpc(args: argparse.Namespace) -> int:
+    """Compute the legal metrics from a VoicePrivacy Challenge run."""
+    import csv
+
+    from legal_eval.vpc import benchmark_vpc_run
+
+    rows = benchmark_vpc_run(
+        args.results_dir,
+        distractor_dataset=args.distractors,
+        conversation_lengths=tuple(int(v) for v in args.conversation_lengths.split(",")),
+        n_runs=args.n_runs,
+        n_folds=args.n_folds,
+        seed=args.seed,
+    )
+    if not rows:
+        raise SystemExit(
+            f"no enrollment and trial pair found under {args.results_dir}. "
+            "Point at a VPC results directory such as exp/asv_anon_<suffix>."
+        )
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with open(args.output, "w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+    header = f"{'dataset':<28}{'metric':<14}{'L':>3}{'speakers':>10}{'value':>9}"
+    print(f"\n{header}\n{'-' * len(header)}")
+    for row in rows:
+        value = 1.0 - row["value"] if row["metric"] == "eer" else row["value"]
+        label = "1-EER" if row["metric"] == "eer" else row["metric"]
+        print(f"{row['dataset']:<28}{label:<14}{row['L']:>3}{row['speakers']:>10}{value:>9.4f}")
+    logger.info("wrote %d rows to %s", len(rows), args.output)
+    return 0
+
 def _report(result, transform=None, label: str | None = None) -> None:
     """Print a short table of the sweep."""
     means, stds = result.mean(), result.std()
@@ -406,6 +441,24 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--conversation-lengths", type=str, default=None, help="e.g. 1,3,30")
     p.set_defaults(func=cmd_plot)
+
+    p = subparsers.add_parser(
+        "vpc", help="compute the metrics from a VoicePrivacy Challenge run"
+    )
+    p.add_argument(
+        "--results-dir", type=Path, required=True,
+        help="a VPC results dir, e.g. exp/asv_anon_mcadams, holding cached embeddings",
+    )
+    p.add_argument(
+        "--distractors", default=None,
+        help="dataset whose speakers enlarge the enrollment population, "
+             "e.g. train-clean-360_mcadams",
+    )
+    p.add_argument("--conversation-lengths", default="1,3")
+    p.add_argument("--n-folds", type=int, default=5)
+    p.add_argument("--output", type=Path, required=True)
+    _add_common(p)
+    p.set_defaults(func=cmd_vpc)
 
     p = subparsers.add_parser("demo", help="run everything on synthetic embeddings")
     p.add_argument("--output-dir", type=Path, default=Path("demo_output"))
