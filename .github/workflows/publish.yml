@@ -6,6 +6,12 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      target:
+        description: "Where to publish. Rehearse on TestPyPI before the real thing."
+        type: choice
+        default: testpypi
+        options: [testpypi, pypi]
 
 jobs:
   build:
@@ -50,7 +56,9 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment: pypi
+    # A tag always means the real index. A manual run goes wherever it was told,
+    # defaulting to TestPyPI so a stray click cannot publish for real.
+    environment: ${{ (github.event_name == 'push' || inputs.target == 'pypi') && 'pypi' || 'testpypi' }}
     # Trusted Publishing: PyPI authenticates the workflow itself, so no API
     # token is stored in the repository.
     permissions:
@@ -60,4 +68,13 @@ jobs:
         with:
           name: dist
           path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Publish to TestPyPI
+        if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+      - name: Publish to PyPI
+        if: github.event_name == 'push' || inputs.target == 'pypi'
+        uses: pypa/gh-action-pypi-publish@release/v1

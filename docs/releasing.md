@@ -4,24 +4,69 @@ How a version reaches PyPI.
 
 ## One-time setup
 
-Publishing uses PyPI **Trusted Publishing**, so no API token is stored in the
-repository. GitHub's OIDC identity is what PyPI authenticates.
+Publishing uses **Trusted Publishing**, so no API token is ever stored in the
+repository. PyPI authenticates GitHub's OIDC identity for this workflow.
 
-1. Create the project on PyPI by uploading the first release manually (below),
-   or reserve it through [PyPI's pending publisher](https://pypi.org/manage/account/publishing/)
-   flow before any upload exists.
-2. On PyPI, under the project's **Publishing** settings, add a GitHub publisher:
+Do it in this order. No manual upload is needed at any point.
 
-   | Field | Value |
-   |---|---|
-   | Owner | `brijmohan` |
-   | Repository | `voice-anonymization-legal-eval` |
-   | Workflow | `publish.yml` |
-   | Environment | `pypi` |
+### 1. Register a pending publisher on TestPyPI
 
-3. In the GitHub repository settings, create an environment named `pypi`. Adding
-   a required reviewer there means a release cannot go out without a human
-   approving it.
+At <https://test.pypi.org/manage/account/publishing/>, add:
+
+| Field | Value |
+|---|---|
+| PyPI Project Name | `voice-anonymization-legal-eval` |
+| Owner | `brijmohan` |
+| Repository name | `voice-anonymization-legal-eval` |
+| Workflow name | `publish.yml` |
+| Environment name | `testpypi` |
+
+A *pending* publisher is how you claim a name that does not exist yet. The first
+successful run creates the project.
+
+### 2. Register the same on PyPI
+
+Identical, at <https://pypi.org/manage/account/publishing/>, except the
+environment name is `pypi`.
+
+### 3. Create both GitHub environments
+
+Repository **Settings, Environments**, then **New environment**, twice:
+`testpypi` and `pypi`.
+
+On `pypi`, add yourself under **Required reviewers**. That turns a release into
+something you approve rather than something a tag does behind your back.
+
+### 4. Rehearse on TestPyPI
+
+**Actions, Publish to PyPI, Run workflow**, leaving the target as `testpypi`.
+
+Then confirm the artifact is real:
+
+```sh
+python -m venv /tmp/rehearsal
+/tmp/rehearsal/bin/pip install --index-url https://test.pypi.org/simple/ \
+    --extra-index-url https://pypi.org/simple voice-anonymization-legal-eval
+/tmp/rehearsal/bin/python -c "
+from legal_eval.paper import load_paper_results
+print(len(load_paper_results()), 'metrics loaded from the published wheel')"
+/tmp/rehearsal/bin/legal-eval demo --output-dir /tmp/rehearsal-demo
+```
+
+The `--extra-index-url` is needed because TestPyPI does not mirror NumPy.
+
+### 5. Release for real
+
+```sh
+git tag v2.0.0 && git push origin v2.0.0
+```
+
+Approve the `pypi` environment when GitHub asks. Then verify:
+
+```sh
+python -m venv /tmp/live && /tmp/live/bin/pip install voice-anonymization-legal-eval
+/tmp/live/bin/legal-eval demo --output-dir /tmp/live-demo
+```
 
 ## Cutting a release
 
@@ -46,8 +91,8 @@ and confirms the published results load from it, then uploads to PyPI after the
 
 ## Publishing by hand
 
-Only needed for the very first upload, if you are not using the pending
-publisher flow.
+Not needed if you followed the setup above. Kept for the case where Trusted
+Publishing is unavailable.
 
 ```sh
 python -m pip install --upgrade build twine
