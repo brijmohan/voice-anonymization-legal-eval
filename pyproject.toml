@@ -72,10 +72,11 @@ testpaths = ["tests"]
 filterwarnings = [
     # Our own warnings are bugs; fail on them.
     "error",
-    # Third-party import-time noise we cannot fix. Older matplotlib, which is
-    # what Python 3.9 resolves to, calls a pyparsing API that pyparsing has
-    # since deprecated.
-    "ignore:'enablePackrat' deprecated",
+    # Third-party noise we cannot fix. Older matplotlib, which is what Python
+    # 3.9 resolves to, calls pyparsing APIs that pyparsing has since renamed,
+    # both at import and while parsing mathtext. Every one of those compat
+    # shims warns with the same phrasing.
+    "ignore:.*deprecated - use .*:DeprecationWarning",
 ]
 
 [tool.ruff]
