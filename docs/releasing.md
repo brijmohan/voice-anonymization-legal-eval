@@ -39,6 +39,13 @@ something you approve rather than something a tag does behind your back.
 
 ### 4. Rehearse on TestPyPI
 
+This step is optional. It is worth doing because it exercises the real upload
+path, but TestPyPI is a best-effort service that is often unavailable, and the
+build job already proves the important things: the distribution builds, passes
+`twine check`, installs into a clean virtualenv, and serves the published
+results from the installed wheel. If TestPyPI is down, skipping straight to
+step 5 costs only the loss of one dry run.
+
 Trigger the workflow. Nothing is uploaded until this runs:
 
 ```sh
@@ -138,7 +145,21 @@ An empty list means no run exists, so trigger it as in step 4. A failed run
 means the logs will say why, usually a missing pending publisher or an
 environment name that does not match the one registered on the index.
 
-**`Trusted publishing exchange failure`.** The pending publisher's four fields
+**`Trusted publishing exchange failure: audience retrieval failed: repository
+at test.pypi.org responded with unexpected 503`.** TestPyPI is down, not your
+configuration. It is a best-effort service and its upload endpoint goes down
+noticeably more often than PyPI's. Check before blaming the setup:
+
+```sh
+curl -s -o /dev/null -w "%{http_code}\n" https://test.pypi.org/legacy/   # 200 when healthy
+curl -s -o /dev/null -w "%{http_code}\n" https://pypi.org/simple/        # compare
+```
+
+Note that `test.pypi.org/simple/` can return 200 while `/legacy/` returns 503,
+so browsing the site is not evidence that uploading works. Wait and retry, or
+skip the rehearsal as described above.
+
+**`Trusted publishing exchange failure`** otherwise. The pending publisher's four fields
 must match the workflow exactly: owner, repository, workflow filename
 (`publish.yml`, not a path), and environment name. The environment is the field
 that is most often wrong, since it differs between the two indexes: `testpypi`
