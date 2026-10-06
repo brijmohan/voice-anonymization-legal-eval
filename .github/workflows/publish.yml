@@ -29,6 +29,9 @@ jobs:
           python -m twine check dist/*
 
       - name: Check the tag matches the package version
+        # Only a tag push carries a version to check. On a manual rehearsal
+        # GITHUB_REF_NAME is the branch, so there is nothing to compare.
+        if: github.event_name == 'push'
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           PKG=$(python -c "import re,pathlib; print(re.search(r'\"([^\"]+)\"', pathlib.Path('legal_eval/__about__.py').read_text()).group(1))")
