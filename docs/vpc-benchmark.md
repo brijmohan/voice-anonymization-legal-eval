@@ -79,6 +79,13 @@ Two practical notes:
 - The evaluation data, the pretrained ASV/ASR/SER models and LibriSpeech are all
   downloaded by that script. Only IEMOCAP is gated.
 
+## Running it on cloud compute
+
+[`gcp-benchmark.md`](gcp-benchmark.md) has a GCP plan: machine shape, staging the
+corpus once in a bucket, spot instances, costs, and the order to run the
+baselines in. The long-lead item is GPU quota, which a fresh project does not
+have, so request it before anything else.
+
 ## Reading the result
 
 ### Population size is the thing to be careful about
