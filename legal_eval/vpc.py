@@ -271,7 +271,8 @@ def evaluate_vpc_dataset(
             means, stds = result.mean(), result.std()
             for count in result.speaker_counts:
                 rows.append({
-                    "dataset": test_utt.dataset, "metric": result.metric,
+                    "dataset": test_utt.dataset, "enrollment": enroll_utt.dataset,
+                    "metric": result.metric,
                     "L": length, "speakers": count,
                     "value": means[count], "std": stds[count],
                 })
@@ -289,39 +290,79 @@ def evaluate_vpc_dataset(
             means, stds = result.mean(), result.std()
             for count in result.speaker_counts:
                 rows.append({
-                    "dataset": test_utt.dataset, "metric": "singling_out",
+                    "dataset": test_utt.dataset, "enrollment": enroll_utt.dataset,
+                    "metric": "singling_out",
                     "L": length, "speakers": count,
                     "value": means[count], "std": stds[count],
                 })
     return rows
 
 
-def pair_datasets(discovered: dict[str, dict[str, Path]]) -> list[tuple[str, Path, Path]]:
-    """Match each VPC enrollment directory with its trial directory.
+@dataclass
+class DatasetPair:
+    """One enrollment and trial pair from a VPC run.
 
-    VPC names them ``<base>_enrolls<suffix>`` and ``<base>_trials_<kind><suffix>``,
-    for example ``libri_dev_enrolls_mcadams`` and
-    ``libri_dev_trials_mixed_mcadams``. Pairing is by the shared prefix before
-    ``_enrolls``, plus the anonymization suffix after it.
+    A single run holds both original and anonymized copies of each dataset, so
+    four combinations exist per base dataset. VPC calls them by which side is
+    anonymized: ``oo``, ``oa``, ``ao``, ``aa``. They are genuinely different
+    attacks and must not be reported under one label.
+
+    Attributes:
+        base: Dataset stem, for example ``libri_dev``.
+        enroll_name: Enrollment dataset directory name.
+        trial_name: Trial dataset directory name.
+        enroll_dir: Enrollment utterance-level embedding directory.
+        trial_dir: Trial utterance-level embedding directory.
+        scenario: ``oo``, ``oa``, ``ao`` or ``aa``.
+    """
+
+    base: str
+    enroll_name: str
+    trial_name: str
+    enroll_dir: Path
+    trial_dir: Path
+    scenario: str
+
+
+def pair_datasets(discovered: dict[str, dict[str, Path]]) -> list[DatasetPair]:
+    """Match VPC enrollment directories with their trial directories.
+
+    VPC names them ``<base>_enrolls<suffix>`` and
+    ``<base>_trials_<kind><suffix>``, where an empty suffix means original
+    speech. Every enrollment is paired with every trial sharing its base, which
+    yields the four scenarios rather than only the matched ones.
 
     Args:
         discovered: Output of :func:`find_embedding_dirs`.
 
     Returns:
-        One ``(name, enrollment utt-level dir, trial utt-level dir)`` per pair.
+        One :class:`DatasetPair` per combination, sorted for stable output.
     """
-    pairs: list[tuple[str, Path, Path]] = []
+    enrolls, trials = [], []
     for name, levels in discovered.items():
-        if "_enrolls" not in name or "utt" not in levels:
+        if "utt" not in levels:
             continue
-        base, _, suffix = name.partition("_enrolls")
-        for other, other_levels in discovered.items():
-            if "utt" not in other_levels or "_trials" not in other:
+        if "_enrolls" in name:
+            base, _, suffix = name.partition("_enrolls")
+            enrolls.append((base, suffix, name, levels["utt"]))
+        elif "_trials" in name:
+            base, _, rest = name.partition("_trials")
+            # rest is "_<kind><suffix>", and kind never contains an underscore
+            # beyond its own leading one, so strip "_<kind>" to get the suffix.
+            parts = rest.split("_")
+            suffix = "_".join([""] + parts[2:]) if len(parts) > 2 else ""
+            trials.append((base, suffix, name, levels["utt"]))
+
+    pairs: list[DatasetPair] = []
+    for e_base, e_suffix, e_name, e_dir in enrolls:
+        for t_base, t_suffix, t_name, t_dir in trials:
+            if e_base != t_base:
                 continue
-            other_base, _, rest = other.partition("_trials")
-            if other_base == base and rest.endswith(suffix):
-                pairs.append((other, levels["utt"], other_levels["utt"]))
-    return pairs
+            scenario = ("o" if not e_suffix else "a") + ("o" if not t_suffix else "a")
+            pairs.append(
+                DatasetPair(e_base, e_name, t_name, e_dir, t_dir, scenario)
+            )
+    return sorted(pairs, key=lambda p: (p.base, p.scenario))
 
 
 def benchmark_vpc_run(
@@ -358,16 +399,19 @@ def benchmark_vpc_run(
         distractors = load_vpc_embeddings(discovered[distractor_dataset]["utt"])
 
     rows: list[dict[str, object]] = []
-    for _name, enroll_dir, trial_dir in pair_datasets(discovered):
-        rows.extend(
-            evaluate_vpc_dataset(
-                load_vpc_embeddings(enroll_dir),
-                load_vpc_embeddings(trial_dir),
-                conversation_lengths=conversation_lengths,
-                distractor_utt=distractors,
-                n_runs=n_runs,
-                n_folds=n_folds,
-                seed=seed,
-            )
-        )
+    for pair in pair_datasets(discovered):
+        for row in evaluate_vpc_dataset(
+            load_vpc_embeddings(pair.enroll_dir),
+            load_vpc_embeddings(pair.trial_dir),
+            conversation_lengths=conversation_lengths,
+            distractor_utt=distractors,
+            n_runs=n_runs,
+            n_folds=n_folds,
+            seed=seed,
+        ):
+            # Without these a row cannot be told apart from the same metric
+            # measured under a different enrollment condition.
+            row["base"] = pair.base
+            row["scenario"] = pair.scenario
+            rows.append(row)
     return rows

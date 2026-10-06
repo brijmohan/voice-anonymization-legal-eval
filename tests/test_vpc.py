@@ -14,6 +14,7 @@ from legal_eval.vpc import (
     evaluate_vpc_dataset,
     find_embedding_dirs,
     load_vpc_embeddings,
+    pair_datasets,
 )
 
 torch = pytest.importorskip("torch")
@@ -185,3 +186,57 @@ def test_mismatched_datasets_are_reported(vpc_tree):
     other.identifier2speaker = dict.fromkeys(other.identifier2speaker, "nobody")
     with pytest.raises(ValueError, match="no speaker appears in both"):
         evaluate_vpc_dataset(enroll, other)
+
+
+def test_pairing_labels_all_four_enroll_trial_scenarios(tmp_path):
+    """A VPC run holds original and anonymized copies of every dataset.
+
+    Pairing them yields four genuinely different attacks, and an earlier version
+    emitted all four under the trial dataset's name alone. Rows for the same
+    trial set then appeared twice with different values and no way to tell which
+    enrollment produced them, which is how this surfaced on a real run.
+    """
+    spk2utt, embeddings = synthetic_corpus(n_speakers=6, n_utterances=4, seed=0)
+    i2s = {u: s for s, us in spk2utt.items() for u in us}
+    root = tmp_path / "emb_xvect"
+    for name in (
+        "libri_dev_enrolls",
+        "libri_dev_trials_mixed",
+        "libri_dev_enrolls_b5",
+        "libri_dev_trials_mixed_b5",
+    ):
+        write_vpc_dir(root / name / "utt-level", embeddings, i2s)
+
+    pairs = pair_datasets(find_embedding_dirs(root))
+    assert {p.scenario for p in pairs} == {"oo", "oa", "ao", "aa"}
+    assert all(p.base == "libri_dev" for p in pairs)
+
+    by_scenario = {p.scenario: p for p in pairs}
+    assert by_scenario["oo"].enroll_name == "libri_dev_enrolls"
+    assert by_scenario["oo"].trial_name == "libri_dev_trials_mixed"
+    assert by_scenario["aa"].enroll_name == "libri_dev_enrolls_b5"
+    assert by_scenario["aa"].trial_name == "libri_dev_trials_mixed_b5"
+    # oa is the cross condition: original enrollment against anonymized trials.
+    assert by_scenario["oa"].enroll_name == "libri_dev_enrolls"
+    assert by_scenario["oa"].trial_name == "libri_dev_trials_mixed_b5"
+
+
+def test_benchmark_rows_carry_base_and_scenario(tmp_path):
+    """Every row must be attributable to one enroll/trial condition."""
+    from legal_eval.vpc import benchmark_vpc_run
+
+    spk2utt, embeddings = synthetic_corpus(n_speakers=8, n_utterances=6, seed=1)
+    i2s = {u: s for s, us in spk2utt.items() for u in us}
+    root = tmp_path / "emb_xvect"
+    for name in ("libri_dev_enrolls", "libri_dev_trials_mixed",
+                 "libri_dev_enrolls_b5", "libri_dev_trials_mixed_b5"):
+        write_vpc_dir(root / name / "utt-level", embeddings, i2s)
+
+    rows = benchmark_vpc_run(root, conversation_lengths=(1,), n_runs=2, n_folds=1)
+    assert rows
+    assert all("base" in r and "scenario" in r and "enrollment" in r for r in rows)
+    assert {r["scenario"] for r in rows} == {"oo", "oa", "ao", "aa"}
+
+    # The same (scenario, metric, L, speakers) must appear exactly once.
+    keys = [(r["scenario"], r["metric"], r["L"], r["speakers"]) for r in rows]
+    assert len(keys) == len(set(keys))

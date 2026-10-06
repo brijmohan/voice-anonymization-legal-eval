@@ -138,3 +138,16 @@ far their true score sits above the best impostor and reports Linkability for th
 most exposed ones. It appears in the CNIL report, not in the Interspeech paper.
 The score-matrix layout here supports it (a speaker may label several columns),
 but it is not implemented.
+
+## VPC enrollment and trial scenarios
+
+A VoicePrivacy run holds an original and an anonymized copy of every dataset, so
+four enroll/trial combinations exist per base dataset. VPC names them by which
+side is anonymized: `oo`, `oa`, `ao`, `aa`. `legal_eval.vpc` evaluates all four
+and labels every row with `base`, `scenario` and `enrollment`.
+
+`aa` is the condition that corresponds to the paper, where enrollment and test
+data are both anonymized. `oa` is an attacker holding original enrollment audio,
+which is a different and often stronger threat model. Reporting one under the
+other's name would be a serious error, so the scenario is never inferred from
+the trial dataset name alone.

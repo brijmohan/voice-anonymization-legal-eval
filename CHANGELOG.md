@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.1.0
+
+**Fix: VPC scenario labelling.** A VoicePrivacy run holds both original and
+anonymized copies of every dataset, so pairing enrollment with trial sets yields
+four genuinely different attacks, which VPC calls `oo`, `oa`, `ao` and `aa`. The
+adapter emitted all of them labelled only by the trial dataset, so rows for the
+same trial set appeared twice with different values and no way to tell which
+enrollment produced them. Surfaced on the first real run against VPC 2026 B5
+output, not by the test suite.
+
+Rows now carry `base`, `scenario` and `enrollment`, `pair_datasets` returns a
+`DatasetPair`, and the CLI groups by scenario rather than printing a dataset
+directory name too long for its column. Two tests pin it, including that each
+`(scenario, metric, L, speakers)` appears exactly once.
+
+Anyone who ran `legal-eval vpc` on 2.0.0 against a VPC run should re-run: the
+numbers were correct but not attributable to a condition.
+
 ## 2.0.0
 
 Complete replacement of the implementation.

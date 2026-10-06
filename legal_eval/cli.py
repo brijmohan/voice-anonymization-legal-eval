@@ -355,12 +355,23 @@ def cmd_vpc(args: argparse.Namespace) -> int:
         writer.writeheader()
         writer.writerows(rows)
 
-    header = f"{'dataset':<28}{'metric':<14}{'L':>3}{'speakers':>10}{'value':>9}"
+    # Group by (base, scenario) so the four enroll/trial conditions in a VPC run
+    # are never read as one. Dataset directory names are far too long to print.
+    header = f"{'dataset':<12}{'scen':<6}{'metric':<14}{'L':>3}{'speakers':>10}{'value':>9}"
     print(f"\n{header}\n{'-' * len(header)}")
-    for row in rows:
+    def sort_key(r):
+        return (r.get("base", r["dataset"]), r.get("scenario", ""),
+                r["metric"], r["L"], r["speakers"])
+
+    for row in sorted(rows, key=sort_key):
         value = 1.0 - row["value"] if row["metric"] == "eer" else row["value"]
         label = "1-EER" if row["metric"] == "eer" else row["metric"]
-        print(f"{row['dataset']:<28}{label:<14}{row['L']:>3}{row['speakers']:>10}{value:>9.4f}")
+        print(
+            f"{str(row.get('base', row['dataset']))[:11]:<12}"
+            f"{str(row.get('scenario', '')):<6}{label:<14}"
+            f"{row['L']:>3}{row['speakers']:>10}{value:>9.4f}"
+        )
+    print("\nscen: first letter is enrollment, second is trial; o original, a anonymized.")
     logger.info("wrote %d rows to %s", len(rows), args.output)
     return 0
 
