@@ -28,6 +28,62 @@ your chosen region, limit 1. Say it is for academic speech privacy research.
 
 While waiting, do everything in "Stage the data" below. None of it needs a GPU.
 
+## Start with the ignorant attacker
+
+The expensive part of a VPC run is finetuning the attacker on anonymized
+`train-clean-360`. It is avoidable for a first result, and skipping it changes
+the job from a multi-day one into an afternoon.
+
+VPC ships a **pretrained** ASV model, `exp/asv_ssl`, which `eval_pre.yaml` uses.
+It was trained on original speech, which is exactly the paper's **Ignorant**
+attacker. Running that path means:
+
+- no model training, so GPU memory stops being the binding constraint
+- no need to anonymize `train-clean-360`, which is 364 of the roughly 374 hours
+  of audio in a full run
+- no IEMOCAP, since it only feeds the SER utility metric
+
+What remains is anonymizing about 11 hours of LibriSpeech evaluation audio and
+one embedding-extraction pass. That produces a genuine results file for one of
+the paper's three attacker models and proves the whole path end to end before
+any money goes into the finetune.
+
+Two trimmed configs are all it takes. From the stock `anon_<baseline>.yaml`,
+drop `IEMOCAP_dev`, `IEMOCAP_test` and `train-clean-360` from `datasets` and
+from the `anon_level_*` lists. From the stock `eval_pre.yaml`, drop the
+`utility` entries under `eval_steps` and the IEMOCAP datasets, leaving
+`privacy: [asv]`.
+
+```sh
+python run_anonymization.py --config configs/track1/anon_asrbn_libri.yaml
+python run_evaluation.py --config configs/track1/eval_pre_privacy.yaml
+legal-eval vpc --results-dir exp/asv_ssl --output results/legal_asrbn_ignorant.csv
+```
+
+Only once that produces sensible numbers is it worth running `eval_post.yaml`,
+which trains the attacker and gives the Informed condition.
+
+## If you use Cloud Workstations
+
+A GPU workstation works, with one trap. The images can ship the NVIDIA driver
+outside the default locations, so `nvidia-smi` is not on `PATH` and
+`torch.cuda.is_available()` returns `False` even though the GPU is attached and
+`/dev/nvidia0` exists. Check `/proc/driver/nvidia/version` before concluding the
+GPU is missing, then:
+
+```sh
+export PATH=/var/lib/nvidia/bin:$PATH
+export LD_LIBRARY_PATH=/var/lib/nvidia/lib64:$LD_LIBRARY_PATH
+```
+
+Also check `runningTimeout` on the workstation config. A workstation stops
+automatically after it elapses regardless of activity, so a job longer than that
+window will be killed partway. Run baselines one at a time rather than chaining
+four of them.
+
+Commands sent over `gcloud workstations ssh` die with the session, so start
+anything long under `setsid nohup ... &` writing to a log, and poll the log.
+
 ## What actually has to run
 
 Per baseline:
