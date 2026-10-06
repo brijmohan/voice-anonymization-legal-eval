@@ -1,0 +1,73 @@
+name: Claude review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  # Lets a maintainer ask for a re-review by commenting @claude on a PR.
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    # Skip comment events that are not an @claude mention on a pull request.
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event.issue.pull_request && contains(github.event.comment.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+
+            Review this pull request. The project is the reference
+            implementation of two privacy metrics from a published paper, so
+            the bar is correctness of the numbers rather than style.
+
+            Read CLAUDE.md first. It states the invariants this repository is
+            built on. Judge the diff against those, in this order:
+
+            1. Does anything change a number the metrics produce? Averaging and
+               normalisation order, threshold rank, tie handling, RNG seeding
+               and draw independence, and which utterances form a conversation
+               all do. If so the change needs a CHANGELOG entry, an entry in
+               docs/differences.md, and a major version bump. Say so explicitly.
+            2. Is new behaviour pinned by a test that could fail? A test that
+               asserts the code returns what it currently returns is not a test.
+               The existing suite checks against independent oracles and
+               theoretical baselines, for instance that an uninformative
+               attacker singles out at exp(-1) and that the fast Linkability
+               estimator matches literal candidate-set sampling.
+            3. Would this break an installed user? The published results must
+               stay inside the package, scipy, h5py, torch and matplotlib must
+               stay lazily imported behind clear errors, and the core must work
+               with numpy alone.
+            4. Ordinary correctness: off-by-one in rank or index arithmetic,
+               silent dtype or shape changes, numerical stability, resource
+               leaks, and error paths that lose the cause.
+            5. Writing: no em or en dashes anywhere, and docstrings that say
+               what a number means rather than restating its type.
+
+            Be specific and quote the line. If the diff is fine, say so briefly
+            rather than inventing findings. Do not comment on formatting that
+            ruff already enforces.
+
+            Note: the PR branch is already checked out in the working directory.
+
+            Use `gh pr comment` for top-level feedback.
+            Use `mcp__github_inline_comment__create_inline_comment` (with
+            `confirmed: true`) for specific lines.
+            Only post GitHub comments, do not reply with review text as a message.
+
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(python -m pytest:*),Bash(ruff check:*),Read,Grep,Glob"
