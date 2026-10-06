@@ -39,7 +39,23 @@ something you approve rather than something a tag does behind your back.
 
 ### 4. Rehearse on TestPyPI
 
-**Actions, Publish to PyPI, Run workflow**, leaving the target as `testpypi`.
+Trigger the workflow. Nothing is uploaded until this runs:
+
+```sh
+gh workflow run publish.yml -f target=testpypi
+gh run watch "$(gh run list --workflow=publish.yml --limit 1 --json databaseId -q '.[0].databaseId')"
+```
+
+Or in the browser: **Actions, Publish to PyPI, Run workflow**, target `testpypi`.
+
+Check it actually uploaded before moving on. A version number can only be used
+once on an index, so a failed run that uploaded nothing is easy to retry, while
+a successful one means the next attempt needs a new version:
+
+```sh
+curl -s -o /dev/null -w "%{http_code}\n" \
+    https://test.pypi.org/pypi/voice-anonymization-legal-eval/json   # 200 once published
+```
 
 Then confirm the artifact is real:
 
@@ -59,6 +75,7 @@ The `--extra-index-url` is needed because TestPyPI does not mirror NumPy.
 
 ```sh
 git tag v2.0.0 && git push origin v2.0.0
+gh run watch "$(gh run list --workflow=publish.yml --limit 1 --json databaseId -q '.[0].databaseId')"
 ```
 
 Approve the `pypi` environment when GitHub asks. Then verify:
@@ -107,6 +124,29 @@ python -m pip install --index-url https://test.pypi.org/simple/ \
 
 python -m twine upload dist/*
 ```
+
+## When something goes wrong
+
+**`No matching distribution found` during the rehearsal.** The package is not on
+the index, which almost always means the publish workflow never ran. Check:
+
+```sh
+gh run list --workflow=publish.yml --limit 5
+```
+
+An empty list means no run exists, so trigger it as in step 4. A failed run
+means the logs will say why, usually a missing pending publisher or an
+environment name that does not match the one registered on the index.
+
+**`Trusted publishing exchange failure`.** The pending publisher's four fields
+must match the workflow exactly: owner, repository, workflow filename
+(`publish.yml`, not a path), and environment name. The environment is the field
+that is most often wrong, since it differs between the two indexes: `testpypi`
+and `pypi`.
+
+**`File already exists`.** That version was already uploaded. Indexes never allow
+reusing a version number, even after deleting the release. Bump
+`legal_eval/__about__.py` and try again.
 
 ## Pre-release checklist
 
