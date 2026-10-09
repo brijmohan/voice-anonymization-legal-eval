@@ -65,6 +65,27 @@ baseline is `exp(-1)` rather than `1/N`. It also needs an artifact the others do
 not: calibration conversations per speaker. A score matrix alone is insufficient
 for it.
 
+## How uncertainty is estimated, and a trap in it
+
+Every value reported here carries a standard error, because a comparison without
+one invites conclusions the data does not support. Two systems whose metric
+values differ by less than the combined standard error have not been shown to
+differ, and when a metric is near its ceiling that is the usual case.
+
+The spread comes from resampling trials with replacement and then drawing the
+closed candidate sets, ten replicates. The EER is bootstrapped over trials the
+same way, so that the incumbent metric can be compared on the same footing
+rather than quoted as a single number.
+
+**The trap.** Estimating the spread from the closed-set draw alone is not
+enough. When `N` equals the number of enrollment speakers, every speaker is in
+every closed set, the draw is deterministic, and the spread is exactly zero.
+That is the largest `N` available and the most interesting one, so a spread that
+vanishes there makes every difference look resolved. We reported one inversion on
+that basis before noticing, and the standard errors in question were exactly
+`0.0000`. A standard error of exactly zero is a signal that the resampling is
+not capturing the right source of variation.
+
 ## Finding 1: the metrics agree on the ranking
 
 On three systems of differing strength, all five order them identically, least

@@ -65,6 +65,26 @@ SLOPES = (0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0)
 N_DRAWS = 10
 
 
+def _bootstrap_eer_sem(scores, true_rows, n_reps: int = 20, seed: int = 0):
+    """Standard error of the ROCCH EER, by resampling trials with replacement.
+
+    Trials are the unit of resampling, so each replicate keeps a trial's mated
+    score with its nonmated ones rather than breaking them apart.
+    """
+    n_trials = scores.shape[1]
+    rng = np.random.default_rng(seed)
+    values = []
+    for _ in range(n_reps):
+        pick = rng.integers(0, n_trials, size=n_trials)
+        sub = scores[:, pick]
+        sub_rows = true_rows[pick]
+        mated = sub[sub_rows, np.arange(n_trials)]
+        mask = np.ones_like(sub, dtype=bool)
+        mask[sub_rows, np.arange(n_trials)] = False
+        values.append(rocch_eer(mated, sub[mask]))
+    return _sem_from(values)
+
+
 def _sem_from(values) -> float | None:
     """Standard error of the mean over runs, or None when there is one run.
 
@@ -210,7 +230,12 @@ def across_population(
     mated = scores[rows, np.arange(n_trials)]
     mask = np.ones_like(scores, dtype=bool)
     mask[rows, np.arange(n_trials)] = False
-    eer = rocch_eer(mated, scores[mask])
+    nonmated = scores[mask]
+    eer = rocch_eer(mated, nonmated)
+    # The EER is usually quoted as a single number, which makes it the only
+    # metric here that cannot be compared against noise. Bootstrap over trials
+    # so its ordering of two systems can be judged on the same footing.
+    eer_sem = _bootstrap_eer_sem(scores, rows)
 
     sweep = singling_out_sweep(
         system.enroll_embeddings,
@@ -249,20 +274,31 @@ def across_population(
     print("-" * len(head))
     out = []
     for n in usable:
-        link_runs = linkability(system.matrix, n_enroll_speakers=n, n_runs=N_DRAWS, seed=0)
-        # SRD and LID each depend on which N candidates were drawn, so a single
-        # draw gives a point with no spread, and a point with no spread cannot
-        # be told apart from another one. Repeat the draw.
-        srd_runs = [
-            similarity_rank_disclosure(scores, rows, n, rng=np.random.default_rng(d))
-            for d in range(N_DRAWS)
-        ]
-        lid_runs = [
-            local_information_disclosure(
-                scores, rows, n, slope=slope, rng=np.random.default_rng(d)
+        # Each replicate resamples trials with replacement and then draws the
+        # closed sets. Drawing closed sets alone is not enough: when N equals
+        # the number of enrollment speakers every speaker is always in the set,
+        # the draw is deterministic, and the spread collapses to exactly zero.
+        # That is the largest and most interesting N, so a spread that vanishes
+        # there would make every difference look resolved.
+        link_runs, srd_runs, lid_runs = [], [], []
+        for d in range(N_DRAWS):
+            boot = np.random.default_rng(1000 + d)
+            pick = boot.integers(0, n_trials, size=n_trials)
+            sub, sub_rows = scores[:, pick], rows[pick]
+            sub_matrix = ScoreMatrix(
+                scores=sub,
+                enroll_speakers=list(system.matrix.enroll_speakers),
+                test_speakers=[system.matrix.test_speakers[i] for i in pick],
+                metadata=dict(system.matrix.metadata),
             )
-            for d in range(N_DRAWS)
-        ]
+            link_runs.append(
+                float(np.mean(linkability(sub_matrix, n_enroll_speakers=n,
+                                          n_runs=1, seed=d)))
+            )
+            srd_runs.append(similarity_rank_disclosure(
+                sub, sub_rows, n, rng=np.random.default_rng(d)))
+            lid_runs.append(local_information_disclosure(
+                sub, sub_rows, n, slope=slope, rng=np.random.default_rng(d)))
         row = {
             "n": n,
             "singling_out": iso_mean.get(n),
@@ -286,7 +322,13 @@ def across_population(
             f"{row['srd_mean']:>10.4f} {row['srd_max']:>9.4f} "
             f"{row['lid_mean']:>9.4f} {row['lid_pdr']:>8.4f} {np.log2(n):>7.3f}"
         )
-    return {"eer": eer, "one_minus_eer": 1 - eer, "slope": slope, "by_n": out}
+    return {
+        "eer": eer,
+        "eer_sem": eer_sem,
+        "one_minus_eer": 1 - eer,
+        "slope": slope,
+        "by_n": out,
+    }
 
 
 def calibration_sensitivity(system: System, slope: float, n: int = 50):
@@ -401,7 +443,7 @@ def report_rankings(systems: dict) -> dict:
         metrics = {
             "1 - EER": (
                 lambda n, rows=at: systems[n]["one_minus_eer"],
-                lambda n, rows=at: None,
+                lambda n, rows=at: systems[n].get("eer_sem"),
             ),
             "Singling Out": (
                 lambda n, rows=at: rows[n]["singling_out"] or 0.0,
@@ -445,7 +487,7 @@ def report_rankings(systems: dict) -> dict:
             resolved[metric] = pairs
 
         inversions = []
-        proposed = [m for m in metrics if m != "1 - EER"]
+        proposed = list(metrics)
         for i, left in enumerate(proposed):
             for right in proposed[i + 1:]:
                 shared = set(resolved[left]) & set(resolved[right])
