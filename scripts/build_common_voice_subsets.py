@@ -41,24 +41,17 @@ Example::
 from __future__ import annotations
 
 import argparse
-import csv
 import sys
 from collections import defaultdict
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).resolve().parent))
 
-#: Common Voice ships several TSVs; validated.tsv is the superset that carries
-#: every clip that passed community review, which is what the subsets drew from.
-TSV_CANDIDATES = ("validated.tsv", "other.tsv", "train.tsv", "dev.tsv", "test.tsv")
-
-#: Common Voice's gender strings, mapped to the single letter Kaldi expects.
-GENDER_MAP = {
-    "male": "m",
-    "male_masculine": "m",
-    "female": "f",
-    "female_feminine": "f",
-}
+from build_cv_common import (  # noqa: E402
+    read_clip_metadata,
+    write_kaldi_dir,
+)
 
 
 def read_filelist(path: Path) -> list[str]:
@@ -75,41 +68,6 @@ def read_filelist(path: Path) -> list[str]:
                 clips.append(name)
     return clips
 
-
-def read_clip_metadata(cv_root: Path) -> dict[str, tuple[str, str]]:
-    """Map clip filename to ``(client_id, gender letter)`` from the corpus TSVs.
-
-    Args:
-        cv_root: The locale directory of the corpus, the one holding
-            ``clips/`` and ``validated.tsv``.
-
-    Returns:
-        Mapping from clip filename to its speaker and gender. Gender is ``f``,
-        ``m`` or ``u`` when Common Voice records none.
-
-    Raises:
-        FileNotFoundError: If no usable TSV is present.
-    """
-    found = [name for name in TSV_CANDIDATES if (cv_root / name).exists()]
-    if not found:
-        raise FileNotFoundError(
-            f"no Common Voice TSV in {cv_root}. Expected one of "
-            f"{', '.join(TSV_CANDIDATES)} beside a clips/ directory."
-        )
-
-    metadata: dict[str, tuple[str, str]] = {}
-    for name in found:
-        with open(cv_root / name, encoding="utf-8", newline="") as handle:
-            for row in csv.DictReader(handle, delimiter="\t"):
-                clip = (row.get("path") or "").strip()
-                if not clip or clip in metadata:
-                    continue
-                gender = (row.get("gender") or "").strip().lower()
-                metadata[clip] = (
-                    (row.get("client_id") or "").strip(),
-                    GENDER_MAP.get(gender, "u"),
-                )
-    return metadata
 
 
 def build_subset(
@@ -175,37 +133,6 @@ def build_subset(
             utt2spk[utt] = speaker
     return spk2utt, utt2spk, spk2gender, missing
 
-
-def write_kaldi_dir(
-    output_dir: Path,
-    spk2utt: dict[str, list[str]],
-    utt2spk: dict[str, str],
-    spk2gender: dict[str, str],
-    clips_dir: Path,
-) -> None:
-    """Write a Kaldi data directory.
-
-    ``wav.scp`` decodes each MP3 through a pipe rather than transcoding up
-    front, which keeps this fast and adds no disk usage.
-    """
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    with open(output_dir / "wav.scp", "w", encoding="utf-8") as handle:
-        for utt in sorted(utt2spk):
-            clip = clips_dir / f"{utt}.mp3"
-            handle.write(f"{utt} ffmpeg -v 8 -i {clip} -f wav -ar 16000 -ac 1 - |\n")
-
-    with open(output_dir / "utt2spk", "w", encoding="utf-8") as handle:
-        for utt in sorted(utt2spk):
-            handle.write(f"{utt} {utt2spk[utt]}\n")
-
-    with open(output_dir / "spk2utt", "w", encoding="utf-8") as handle:
-        for speaker in sorted(spk2utt):
-            handle.write(f"{speaker} {' '.join(sorted(spk2utt[speaker]))}\n")
-
-    with open(output_dir / "spk2gender", "w", encoding="utf-8") as handle:
-        for speaker in sorted(spk2gender):
-            handle.write(f"{speaker} {spk2gender[speaker]}\n")
 
 
 def main() -> int:
