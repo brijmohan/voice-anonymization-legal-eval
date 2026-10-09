@@ -265,6 +265,118 @@ reproduction.
 merely interesting, and the authors of a CNIL-validated framework are
 well-placed to make it.
 
+## 10. The calibration is the metric: reproducibility of information-theoretic privacy measures
+
+**The claim.** Local Information Disclosure reports privacy loss in bits via a
+calibrated posterior, and the calibration is load bearing and unspecified. The
+Platt intercept and the prior-ratio term cancel exactly in the softmax, so the
+fitted slope is the only calibration parameter that reaches the reported number.
+Varying it alone moves ALID by several bits on fixed data and can change its
+sign. Fitting it per system, which is the natural thing to do, feeds the
+measured effect back into the measurement: a weaker system fits a flatter slope,
+a flatter slope flattens the posterior, and ALID drifts towards zero whatever
+the system leaked.
+
+Worse, on real VoicePrivacy data the fit is degenerate. The `libri_test`
+enrollment against original trials is perfectly separable, so the logistic
+regression has no finite maximum likelihood. The slope diverges and the reported
+value is the optimiser's stopping point. In that limit ALID equals `log2 N`
+exactly, so the metric collapses to a restatement of "Linkability is 1".
+
+**Why it is worth writing.** This is not a defect in the idea. A calibrated
+posterior is the right object if you want disclosure in bits. It is a
+specification gap, and specification gaps in evaluation metrics are exactly what
+a shared benchmark has to close. The paper writes the specification: which
+development set, fit per system or shared, what regularisation, what behaviour
+under separability. Rank-based metrics need none of it, which is a real argument
+in their favour and one their own authors have not made.
+
+**What makes it credible rather than adversarial.** Do it with the metric's
+authors, and publish the specification jointly rather than the criticism alone.
+Our implementation is public and labelled as our reading, and the verification
+kit exists so they can correct it before anything is claimed.
+
+**Status.** Measured, implemented, tested. The one thing outstanding is the
+authors' confirmation of the reading, which is a one-paragraph answer.
+
+**Venue.** Computer Speech and Language or Speech Communication as a joint
+methodological paper. Or the SPSC Symposium for the short version first, since
+the community that cares is small and concentrated there. The journal route is
+better because a specification needs to be citable.
+
+## 11. Metric saturation: we have been evaluating on populations too small to measure
+
+**The claim.** Every privacy metric currently proposed, except the EER, is
+bounded by the population: Linkability cannot exceed 1 and the bit metrics
+cannot exceed `log2 N`. On the VoicePrivacy `libri` sets the largest population
+available is 29 speakers, and at that size most conditions sit against the
+bound. Linkability for original speech is exactly 1.000 at every `N` up to 29.
+Four of six measured conditions have SRD and LID within ten percent of their
+ceiling.
+
+Where a metric is saturated it cannot separate systems, and the apparent
+disagreements between metrics turn out to be sort-order tie-breaks on identical
+values. The first version of our own comparison reported "two different
+orderings" for exactly this reason, which is how the problem was found.
+
+**Why it is worth writing.** It reframes the whole metric debate. The field has
+spent eighteen months proposing replacements for the EER while evaluating them
+on populations where none of the replacements has range. The binding constraint
+is the evaluation set. A paper that measures the saturation point of each metric
+as a function of population size, and states the minimum population at which
+each becomes informative, is more useful than another metric.
+
+It also tells a challenge organiser something actionable: how many speakers the
+evaluation set needs for the metric to do any work.
+
+**The experiment.** Sweep population size on a corpus large enough to exhaust
+it, which means Common Voice rather than LibriSpeech. For each metric, find the
+population at which it stops being pinned, and the population at which its
+standard error over runs drops below the gap between two baseline systems. That
+second quantity is the one a protocol designer needs and nobody reports.
+
+**Status.** The saturation is measured on VPC. The sweep needs the larger
+evaluation set, which is the Common Voice 27 work already in progress.
+
+**Venue.** Interspeech, because it is a measurement result with a clear
+practical consequence and it fits the length. Pair it with the subset design
+correction, which is the same argument from a different direction.
+
+## 12. Resolution, not ranking: what a privacy metric needs to be able to tell apart
+
+**The claim.** The useful comparison between privacy metrics is not whether they
+rank systems in the same order. On real data they do: where two metrics both
+separate a pair of systems, they order it the same way, with no inversions. What
+differs is **resolution**, how many pairs a metric separates at all, given the
+spread over evaluation runs.
+
+This suggests a figure of merit nobody computes: for a metric, a population size
+and a pair of systems, is the gap between the two systems larger than the
+combined standard error? Call it the metric's discriminative power at that
+population. It is cheap to compute, it is what a protocol designer actually
+needs, and it ranks metrics on something other than taste.
+
+**Why it is worth writing.** The current literature argues about which metric is
+conceptually right. That argument has no empirical content as long as the
+metrics agree on ordering. Resolution has empirical content, it is measurable,
+and it can conclude against the author's own metric, which ours does: Singling
+Out resolves fewer pairs than Linkability or SRD on the same data, because its
+range is compressed between `exp(-1)` and 1.
+
+**Relation to existing work.** This is the privacy analogue of what the speaker
+recognition community does with error bars on the EER and what the MT community
+does with significance testing on BLEU. The machinery is standard. It simply has
+not been applied here, which is why "the metrics disagree" is repeated without
+anyone checking whether the disagreements survive the noise.
+
+**Status.** Implemented. The tie-aware ranking and the coarsening-versus-
+inversion distinction are in `examples/04_compare_privacy_metrics.py`. Needs the
+larger population to be worth a paper.
+
+**Venue.** Interspeech or ICASSP. Could also be the methodological core of the
+joint commensurability paper rather than a separate submission, and that is
+probably the better use of it.
+
 ## Cross-cutting notes
 
 **The name collision is a prerequisite for anything VPC-facing.** VPC 2026
@@ -277,6 +389,17 @@ eventually. Settle naming with the organizers before writing any integration.
 population size, attacker model, and whether distractor speakers were used. A
 number without all four is not interpretable, and this should be stated in
 whatever these ideas turn into.
+
+**Report resolution, not just a value.** Every number from these metrics
+should carry a spread over evaluation runs, and any claim that two systems
+differ should be checked against it. Two systems whose metric values differ by
+less than the combined standard error have not been shown to differ, and at the
+ceiling that is the usual case. Our own first comparison claimed a ranking
+disagreement that was a tie-break on saturated values.
+
+**Check the ceiling before blaming the metric.** Linkability is bounded by 1 and
+the bit metrics by `log2 N`. Before concluding that a metric fails to separate
+two systems, check whether it had any range left at that population.
 
 **Artifacts exist and should be cited.** Code on GitHub, data at
 [10.5281/zenodo.23142030](https://doi.org/10.5281/zenodo.23142030). Any of these
