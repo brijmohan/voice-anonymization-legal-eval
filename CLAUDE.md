@@ -73,8 +73,13 @@ or a plain conjunction. A spaced hyphen is the same habit in disguise and is not
 a substitute. Check with:
 
 ```sh
-git ls-files -z | xargs -0 grep -nP '[\x{2014}\x{2013}]'
+python scripts/check_no_dashes.py
 ```
+
+Do not use `grep -nP` for this. BSD grep, which macOS ships, has no `-P` and
+exits with a usage error that reads as a clean result, which is how a dash
+reached `CONTRIBUTING.md` and survived several passes. The script is checked in
+CI.
 
 Docstrings are Google style and say what a number *means*, not what type it is.
 `Returns: The ROCCH-EER, in [0, 0.5].` is useful. `Returns: float` is not.

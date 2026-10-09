@@ -64,3 +64,14 @@ jobs:
         with:
           python-version: "3.11"
       - run: python scripts/check_no_private_material.py
+
+  writing-style:
+    # The documented one-liner for this needs a PCRE grep, which macOS does
+    # not ship, so it failed open locally and a dash reached a tracked file.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python scripts/check_no_dashes.py

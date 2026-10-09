@@ -95,6 +95,25 @@ search and against the conversation length `L`, the number of utterances average
 per speaker. [`docs/metrics.md`](docs/metrics.md) gives the definitions, the
 calibration rule and the correspondence to the paper's equations.
 
+### Comparing against the other recent proposals
+
+Three other groups have proposed replacing the EER, in bits rather than
+probabilities. `legal_eval.comparison` implements Local Information Disclosure
+and Similarity Rank Disclosure so that all of them can be computed from one
+artifact, which is the only way to compare the metrics rather than the
+pipelines:
+
+```bash
+python examples/04_compare_privacy_metrics.py --demo
+```
+
+Those two implementations are **our reading of the published definitions**, not
+authoritative. [`docs/metric-comparison.md`](docs/metric-comparison.md) records
+what the comparison shows, including that SRD's identification rate is the
+Linkability metric, that the probability and bit metrics move in opposite
+directions as the population grows, and that LID's reported bits depend as much
+on its calibration as on the system being measured.
+
 ## Using it on your own data
 
 Point it at Kaldi-style directories, each holding a `spk2utt` file and an

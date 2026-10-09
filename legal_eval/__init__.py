@@ -18,6 +18,13 @@ upstream steps performed with external toolkits; see ``docs/reproduction.md``.
 """
 
 from legal_eval.__about__ import __version__
+from legal_eval.comparison import (
+    DisclosureResult,
+    calibration_samples,
+    fit_calibration,
+    local_information_disclosure,
+    similarity_rank_disclosure,
+)
 from legal_eval.embeddings import (
     average_embeddings,
     build_conversations,
@@ -58,12 +65,15 @@ __all__ = [
     "build_conversations",
     "build_speaker_embeddings",
     "build_test_embeddings",
+    "calibration_samples",
     "cosine_score_matrix",
     "eer_sweep",
+    "fit_calibration",
     "l2_normalize",
     "linkability",
     "linkability_sweep",
     "load_paper_results",
+    "local_information_disclosure",
     "load_score_matrix",
     "load_vpc_embeddings",
     "load_spk2utt",
@@ -72,7 +82,9 @@ __all__ = [
     "rocch_eer",
     "save_score_matrix",
     "singling_out",
+    "similarity_rank_disclosure",
     "singling_out_sweep",
+    "DisclosureResult",
     "PublishedCurve",
     "SweepResult",
     "write_results",

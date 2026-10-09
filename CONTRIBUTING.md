@@ -12,8 +12,8 @@ ruff check legal_eval tests examples
 ## What this repository is for
 
 It implements the metrics from one paper. The bar for changes is whether they
-make the evaluation more correct, more reproducible, or easier to apply to a new
-system — not whether they add features.
+make the evaluation more correct, more reproducible, or easier to apply to a
+new system. Adding features is not itself a reason.
 
 Out of scope: anonymization systems, embedding extractors, and model training.
 Those belong upstream, in the Voice Privacy Challenge and Sidekit repositories.

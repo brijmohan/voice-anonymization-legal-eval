@@ -1,5 +1,33 @@
 # Changelog
 
+## Unreleased
+
+**New: `legal_eval.comparison`, for putting the recent privacy metrics on one
+footing.** Four groups have proposed replacing the EER and none had been run
+against the others on the same data, because published values come from
+different corpora, attackers and splits. This module computes Local Information
+Disclosure (Backstrom et al., arXiv:2607.06259) and Similarity Rank Disclosure
+(Chandra et al., arXiv:2605.07291) alongside the metrics already here, so a
+comparison can be run from one artifact.
+
+The LID and SRD implementations are **our reading of the published
+definitions**, not authoritative. They are small and commented so that their
+authors can check them quickly rather than reimplementing. See
+[`docs/metric-comparison.md`](docs/metric-comparison.md) for the findings, which
+include: SRD's identification rate is the Linkability metric; LID's Platt
+intercept and prior term cancel in the softmax, leaving the slope as the only
+calibration parameter that reaches the result; the probability metrics fall with
+population size while the bit metrics rise; and ALID moves by tens of bits, and
+changes sign, when only the calibration slope changes.
+
+No existing value moves. Nothing in this entry affects the published metrics.
+
+**New: `scripts/check_no_dashes.py`, checked in CI.** The writing rule against
+em and en dashes was documented as a `grep -nP` one-liner. BSD grep has no `-P`
+and exits with a usage error that reads as a clean result, so the check failed
+open on macOS and a dash reached `CONTRIBUTING.md` and survived several passes.
+Fixed, and the check no longer depends on which grep is installed.
+
 ## 2.1.0
 
 **Fix: VPC scenario labelling.** A VoicePrivacy run holds both original and
