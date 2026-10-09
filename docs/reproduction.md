@@ -182,6 +182,13 @@ Full digests are in `MANIFEST.json` on the record. Before using these, read
 identity than their name suggests, and the pseudonymous labels are not a
 safeguard.
 
+## Choosing subset thresholds
+
+The paper's 2 and 3 minute thresholds are defensible but measure duration
+where the metrics count utterances, and they conflate the enrollment
+population's two roles. [`subset-design.md`](subset-design.md) works through
+what to change when building subsets on a current release.
+
 ## Evaluating your own system
 
 You do not need any of the above. Anonymize your audio, extract embeddings with
