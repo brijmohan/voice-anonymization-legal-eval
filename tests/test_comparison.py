@@ -10,6 +10,7 @@ import pytest
 from legal_eval.comparison import (
     calibration_samples,
     fit_calibration,
+    is_separable,
     local_information_disclosure,
     similarity_rank_disclosure,
 )
@@ -267,3 +268,77 @@ def test_self_calibration_shrinks_the_gap_between_systems():
         weak, rows, n, rng=np.random.default_rng(6)
     ).identification_rate
     assert link_strong > link_weak
+
+
+def test_lid_equals_log2_n_exactly_on_separable_data():
+    """A perfectly separable system drives LID to its ceiling and no further.
+
+    Separable development scores have no finite logistic maximum likelihood, so
+    the slope diverges, the softmax becomes a hard argmax, and the posterior is
+    one for the winner. ALID is then exactly ``log2(N)`` and the metric reports
+    the same thing as "Linkability is 1", in bits. This is not hypothetical:
+    VoicePrivacy's libri_test original condition is separable.
+    """
+    rng = np.random.default_rng(0)
+    n_enroll, n_trials = 29, 400
+    scores = rng.normal(size=(n_enroll, n_trials))
+    true_rows = rng.integers(0, n_enroll, size=n_trials)
+    scores[true_rows, np.arange(n_trials)] = scores.max() + 5.0
+
+    mated, nonmated = calibration_samples(scores, true_rows)
+    assert is_separable(mated, nonmated)
+    slope, _ = fit_calibration(mated, nonmated)
+    assert slope > 10.0  # diverging, the exact value is the optimiser's
+
+    for n in (10, 29):
+        lid = local_information_disclosure(
+            scores, true_rows, n, slope=slope, rng=np.random.default_rng(1)
+        )
+        assert lid.identification_rate == pytest.approx(1.0)
+        assert lid.mean == pytest.approx(np.log2(n))
+        assert lid.positive_rate == pytest.approx(1.0)
+
+
+def test_near_separable_bits_are_set_by_the_slope_not_the_data():
+    """One failing trial leaves the bits at the mercy of a diverging fit.
+
+    With the data fixed and a single trial misidentified, ALID still moves by
+    more than two bits across slopes that a diverging optimiser could plausibly
+    return. Two implementations of the same metric on the same data would not
+    agree, which is the practical obstacle for a shared platform.
+    """
+    rng = np.random.default_rng(0)
+    n_enroll, n_trials = 29, 400
+    scores = rng.normal(size=(n_enroll, n_trials))
+    true_rows = rng.integers(0, n_enroll, size=n_trials)
+    scores[true_rows, np.arange(n_trials)] = scores.max() + 5.0
+    # Break exactly one trial.
+    scores[true_rows[0], 0] = scores[:, 0].min() - 1.0
+
+    mated, nonmated = calibration_samples(scores, true_rows)
+    assert not is_separable(mated, nonmated)
+
+    n = 29
+    means = {}
+    for slope in (3.0, 50.0, 200.0):
+        lid = local_information_disclosure(
+            scores, true_rows, n, slope=slope, rng=np.random.default_rng(1)
+        )
+        means[slope] = lid.mean
+        # The ranking is untouched, so the identification rate is fixed.
+        assert lid.identification_rate == pytest.approx(1 - 1 / n_trials)
+
+    assert max(means.values()) - min(means.values()) > 2.0
+    # More confidence in a wrong answer costs bits, so a steeper slope scores
+    # lower here despite identical rankings.
+    assert means[200.0] < means[3.0]
+
+
+def test_is_separable_is_false_when_the_sets_overlap():
+    rng = np.random.default_rng(2)
+    mated = rng.normal(loc=1.0, size=500)
+    nonmated = rng.normal(loc=0.0, size=500)
+    assert not is_separable(mated, nonmated)
+    assert is_separable(np.array([2.0, 3.0]), np.array([0.0, 1.0]))
+    assert not is_separable(np.array([1.0]), np.array([1.0]))
+    assert not is_separable(np.array([]), np.array([0.0]))

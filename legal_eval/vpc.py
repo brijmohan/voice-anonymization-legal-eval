@@ -314,6 +314,10 @@ class DatasetPair:
         enroll_dir: Enrollment utterance-level embedding directory.
         trial_dir: Trial utterance-level embedding directory.
         scenario: ``oo``, ``oa``, ``ao`` or ``aa``.
+        system: The anonymization suffix shared by the anonymized side or
+            sides, for example ``_mcadams``. Empty for ``oo``. One results
+            directory can hold several systems, so this is what distinguishes
+            otherwise identically labelled rows.
     """
 
     base: str
@@ -322,6 +326,7 @@ class DatasetPair:
     enroll_dir: Path
     trial_dir: Path
     scenario: str
+    system: str = ""
 
 
 def pair_datasets(discovered: dict[str, dict[str, Path]]) -> list[DatasetPair]:
@@ -329,8 +334,10 @@ def pair_datasets(discovered: dict[str, dict[str, Path]]) -> list[DatasetPair]:
 
     VPC names them ``<base>_enrolls<suffix>`` and
     ``<base>_trials_<kind><suffix>``, where an empty suffix means original
-    speech. Every enrollment is paired with every trial sharing its base, which
-    yields the four scenarios rather than only the matched ones.
+    speech. Every enrollment is paired with every trial sharing its base and
+    its system, which yields the four scenarios rather than only the matched
+    ones. Pairs that would cross two different anonymization systems are not
+    emitted, because they describe no attack.
 
     Args:
         discovered: Output of :func:`find_embedding_dirs`.
@@ -358,11 +365,22 @@ def pair_datasets(discovered: dict[str, dict[str, Path]]) -> list[DatasetPair]:
         for t_base, t_suffix, t_name, t_dir in trials:
             if e_base != t_base:
                 continue
+            # A results directory can hold more than one anonymization system,
+            # which is what VPC's own shared ASV directory does. Pairing one
+            # system's enrollment against another's trials describes no attack
+            # anyone would mount, so those combinations are skipped. Mixed
+            # original and anonymized pairs are kept: they are the oa and ao
+            # scenarios and are the point of the exercise.
+            if e_suffix and t_suffix and e_suffix != t_suffix:
+                continue
             scenario = ("o" if not e_suffix else "a") + ("o" if not t_suffix else "a")
             pairs.append(
-                DatasetPair(e_base, e_name, t_name, e_dir, t_dir, scenario)
+                DatasetPair(
+                    e_base, e_name, t_name, e_dir, t_dir, scenario,
+                    e_suffix or t_suffix,
+                )
             )
-    return sorted(pairs, key=lambda p: (p.base, p.scenario))
+    return sorted(pairs, key=lambda p: (p.base, p.system, p.scenario))
 
 
 def benchmark_vpc_run(

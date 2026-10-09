@@ -137,6 +137,32 @@ def calibration_samples(
     return mated, normalised[mask]
 
 
+def is_separable(mated: np.ndarray, nonmated: np.ndarray) -> bool:
+    """Whether a single threshold separates the two score sets perfectly.
+
+    This matters because LID's calibration is a logistic regression, and a
+    logistic regression on separable data has no finite maximum likelihood: the
+    slope diverges and the fit stops wherever the optimiser stops. The slope is
+    the only calibration parameter that reaches LID's reported bits, so for a
+    separable system those bits are set by the optimiser rather than the data.
+
+    It is not a corner case. VoicePrivacy's ``libri_test`` enrollment against
+    original trials is separable, and fitting it here returns a slope near 200.
+
+    Args:
+        mated: Scores of same-speaker trials.
+        nonmated: Scores of different-speaker trials.
+
+    Returns:
+        ``True`` when no mated score falls at or below any nonmated score.
+    """
+    mated = np.asarray(mated, dtype=np.float64)
+    nonmated = np.asarray(nonmated, dtype=np.float64)
+    if mated.size == 0 or nonmated.size == 0:
+        return False
+    return bool(mated.min() > nonmated.max())
+
+
 def fit_calibration(
     mated: np.ndarray, nonmated: np.ndarray
 ) -> tuple[float, float]:
@@ -157,7 +183,10 @@ def fit_calibration(
         nonmated: Scores of different-speaker development trials.
 
     Returns:
-        ``(w, b)``.
+        ``(w, b)``. On separable development scores no finite maximiser exists
+        and ``w`` grows until the Newton steps stop making progress, so the
+        value returned is an artifact of the optimiser. Check with
+        :func:`is_separable` before reporting bits that depend on it.
     """
     x = np.concatenate([np.asarray(mated, float), np.asarray(nonmated, float)])
     y = np.concatenate([np.ones(len(mated)), np.zeros(len(nonmated))])

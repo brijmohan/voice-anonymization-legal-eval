@@ -178,3 +178,23 @@ the fitted slopes change and the magnitudes with them.
 
 Both are cheap for the authors to check against our implementation, which is why
 it is written to be read. See `legal_eval/comparison.py`.
+
+## Verifying our reading, in an afternoon
+
+The findings above depend on our reading of two other groups' definitions, so
+the implementations are built to be checked rather than trusted.
+`scripts/make_verification_kit.py` writes a self-contained directory holding one
+score matrix, the true identity per trial, the values our implementation
+produces across a grid of population sizes and calibration slopes, and the
+implementation itself:
+
+```sh
+python scripts/make_verification_kit.py --output-dir verification_kit
+```
+
+The matrix is synthetic by default, so the kit carries no data licence and can
+be sent to anyone. `--from-vpc` builds it from a VoicePrivacy run instead.
+
+Reporting ALID across a grid of slopes rather than at one fitted value is
+deliberate: it separates "do we agree on the metric" from "do we agree on the
+calibration", and those are different questions with different answers.

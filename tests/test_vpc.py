@@ -240,3 +240,48 @@ def test_benchmark_rows_carry_base_and_scenario(tmp_path):
     # The same (scenario, metric, L, speakers) must appear exactly once.
     keys = [(r["scenario"], r["metric"], r["L"], r["speakers"]) for r in rows]
     assert len(keys) == len(set(keys))
+
+
+def test_two_systems_in_one_directory_are_not_crossed(tmp_path):
+    """One results directory can hold several anonymization systems.
+
+    VPC's shared ASV directory does exactly this: a single ``exp/asv_ssl``
+    accumulates the anonymized copies of every baseline evaluated against the
+    same attacker. Pairing every enrollment with every trial sharing a base then
+    produces mcadams enrollment against asrbn trials, which describes no attack
+    anyone would mount and which would be reported as a plain ``aa`` row
+    alongside the real ones.
+    """
+    spk2utt, embeddings = synthetic_corpus(n_speakers=6, n_utterances=4, seed=0)
+    i2s = {u: s for s, us in spk2utt.items() for u in us}
+    root = tmp_path / "emb_xvect"
+    for name in (
+        "libri_dev_enrolls",
+        "libri_dev_trials_mixed",
+        "libri_dev_enrolls_mcadams",
+        "libri_dev_trials_mixed_mcadams",
+        "libri_dev_enrolls_asrbn",
+        "libri_dev_trials_mixed_asrbn",
+    ):
+        write_vpc_dir(root / name / "utt-level", embeddings, i2s)
+
+    pairs = pair_datasets(find_embedding_dirs(root))
+
+    for pair in pairs:
+        if pair.scenario != "aa":
+            continue
+        assert pair.enroll_name.endswith(pair.system)
+        assert pair.trial_name.endswith(pair.system)
+
+    # Both systems are present, each with its own matched condition.
+    aa = {p.system for p in pairs if p.scenario == "aa"}
+    assert aa == {"_mcadams", "_asrbn"}
+
+    # Exactly one aa pair per system, not one per system pairing.
+    assert len([p for p in pairs if p.scenario == "aa"]) == 2
+
+    # The cross conditions survive, since they are a real attack and not a
+    # crossing of two systems.
+    assert {p.system for p in pairs if p.scenario == "oa"} == {"_mcadams", "_asrbn"}
+    assert {p.system for p in pairs if p.scenario == "ao"} == {"_mcadams", "_asrbn"}
+    assert [p.system for p in pairs if p.scenario == "oo"] == [""]

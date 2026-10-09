@@ -22,6 +22,7 @@ from legal_eval.comparison import (
     DisclosureResult,
     calibration_samples,
     fit_calibration,
+    is_separable,
     local_information_disclosure,
     similarity_rank_disclosure,
 )
@@ -69,6 +70,7 @@ __all__ = [
     "cosine_score_matrix",
     "eer_sweep",
     "fit_calibration",
+    "is_separable",
     "l2_normalize",
     "linkability",
     "linkability_sweep",
