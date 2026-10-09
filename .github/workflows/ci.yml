@@ -53,3 +53,14 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Test the VPC adapter
         run: pytest tests/test_vpc.py -q
+
+  no-private-material:
+    # A public repository for a privacy paper must not leak personal data of
+    # its own. This nearly happened once; see the script's docstring.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python scripts/check_no_private_material.py

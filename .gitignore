@@ -30,3 +30,10 @@ data/cv11*/
 
 # Build artifacts
 dist/
+
+# Internal or third-party material must never reach this public repository.
+# PSST deliverables and OneDrive exports carry personal data about named
+# doctoral candidates. Keep them in ../psst-private/, outside the working tree.
+*.zip
+PSST*
+OneDrive*

@@ -97,6 +97,7 @@ def test_caps_limit_utterances(corpus):
 def test_end_to_end_build(corpus, tmp_path, capsys):
     out = tmp_path / "subsets"
     sys.argv = ["x", "--cv-root", str(corpus), "--output-dir", str(out),
+                "--criterion", "duration",
                 "--min-enroll-minutes", "2", "--min-test-minutes", "3"]
     assert construct.main() == 0
     captured = capsys.readouterr().out
@@ -116,11 +117,70 @@ def test_end_to_end_build(corpus, tmp_path, capsys):
     assert load_utt2spk(out / "A_enroll" / "utt2spk").keys() == a_utts
 
 
+def test_end_to_end_with_the_utterance_criterion(corpus, tmp_path, capsys):
+    """The default criterion, sized for the fixture's speakers."""
+    out = tmp_path / "subsets_utt"
+    sys.argv = ["x", "--cv-root", str(corpus), "--output-dir", str(out),
+                "--enroll-utterances", "2", "--max-conversation-length", "2"]
+    assert construct.main() == 0
+    assert "utterance overlap between A and B: 0" in capsys.readouterr().out
+
+    from legal_eval.io import load_spk2utt
+    a = load_spk2utt(out / "A_enroll" / "spk2utt")
+    b = load_spk2utt(out / "B_test" / "spk2utt")
+    # rich (10 utts) and middling (4) clear a budget of 2; poor (1) does not.
+    assert len(a) == 2
+    # Only rich has 2 + 4 utterances, so only it can be a test speaker.
+    assert len(b) == 1
+    assert all(len(v) == 2 for v in a.values()), "fixed budget, not a minimum"
+    assert all(len(v) == 4 for v in b.values()), "2 x L_max"
+
+
 def test_speaker_ids_are_pseudonymised(corpus, tmp_path):
     out = tmp_path / "s2"
-    sys.argv = ["x", "--cv-root", str(corpus), "--output-dir", str(out)]
+    sys.argv = ["x", "--cv-root", str(corpus), "--output-dir", str(out),
+                "--criterion", "duration"]
     assert construct.main() == 0
     from legal_eval.io import load_spk2utt
     speakers = load_spk2utt(out / "A_enroll" / "spk2utt")
     assert all(s.startswith("spk-") for s in speakers)
     assert not any(s in ("rich", "middling", "poor") for s in speakers)
+
+
+def test_utterance_criterion_uses_a_fixed_enrollment_budget():
+    """Every speaker contributes the same reference strength, not a minimum."""
+    utts = [(f"c{i}", 5.0) for i in range(50)]
+    enroll, test = construct.assign_by_utterance_count(utts, enroll_budget=10,
+                                                       test_utterances=60)
+    assert len(enroll) == 10, "exactly the budget, not more"
+    assert test == [], "50 utterances cannot also yield 60 test ones"
+
+
+def test_utterance_criterion_guarantees_2L_for_singling_out():
+    """L=30 needs 60 test utterances so test and calibration stay disjoint."""
+    utts = [(f"c{i}", 5.0) for i in range(80)]
+    enroll, test = construct.assign_by_utterance_count(utts, 10, 2 * 30)
+    assert len(enroll) == 10
+    assert len(test) == 60
+    assert set(enroll).isdisjoint(set(test))
+
+
+def test_utterance_criterion_keeps_enrollment_only_speakers():
+    """They are the distractor population, which is what buys a large N."""
+    utts = [(f"c{i}", 5.0) for i in range(12)]
+    enroll, test = construct.assign_by_utterance_count(utts, 10, 60)
+    assert len(enroll) == 10
+    assert test == []
+
+
+def test_utterance_criterion_drops_speakers_below_the_budget():
+    enroll, test = construct.assign_by_utterance_count(
+        [("c0", 5.0)], enroll_budget=10, test_utterances=60)
+    assert enroll == [] and test == []
+
+
+def test_duration_criterion_is_still_available_for_paper_replication():
+    """The paper's thresholds must stay reachable, since its numbers used them."""
+    utts = [(f"c{i}", 60.0) for i in range(10)]
+    enroll, test = construct.assign_utterances(utts, 120, 180, None, None)
+    assert len(enroll) == 2 and len(test) == 3

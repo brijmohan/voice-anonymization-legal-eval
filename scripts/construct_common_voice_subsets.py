@@ -109,13 +109,69 @@ def assign_utterances(
     return enroll, test
 
 
+def assign_by_utterance_count(
+    utterances: list[tuple[str, float]],
+    enroll_budget: int,
+    test_utterances: int,
+) -> tuple[list[str], list[str]]:
+    """Split a speaker's utterances using counts rather than minutes.
+
+    This is the criterion the metrics actually need. Linkability at conversation
+    length ``L`` consumes ``L`` utterances per test speaker and Singling Out
+    consumes ``2L``, because its test and calibration conversations must be
+    disjoint. A duration threshold does not guarantee either: three minutes is
+    thirty six-second clips or three sixty-second ones, and only the first can
+    support ``L = 30``.
+
+    Enrollment takes a fixed budget rather than a minimum, so the attacker's
+    reference is the same strength for every speaker instead of varying with
+    whatever that speaker happened to record. See ``docs/subset-design.md``.
+
+    Args:
+        utterances: ``(clip, duration_seconds)`` pairs for one speaker.
+        enroll_budget: Exact number of utterances for the enrollment side.
+        test_utterances: Number required for the test side, normally
+            ``2 * max(conversation_lengths)``.
+
+    Returns:
+        ``(enroll_clips, test_clips)``. ``test_clips`` is empty when the speaker
+        has enough to enrol but not to be tested, which is the common case and
+        is why those speakers still swell the distractor population.
+    """
+    if len(utterances) < enroll_budget:
+        return [], []
+    enroll = [clip for clip, _ in utterances[:enroll_budget]]
+    remaining = utterances[enroll_budget:]
+    if len(remaining) < test_utterances:
+        return enroll, []
+    return enroll, [clip for clip, _ in remaining[:test_utterances]]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cv-root", type=Path, required=True,
                         help="locale directory holding clips/ and the TSVs")
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--min-enroll-minutes", type=float, default=2.0)
-    parser.add_argument("--min-test-minutes", type=float, default=3.0)
+    parser.add_argument(
+        "--criterion", choices=("utterances", "duration"), default="utterances",
+        help="'utterances' matches what the metrics consume and is the default; "
+             "'duration' reproduces the paper's 2 and 3 minute thresholds",
+    )
+    parser.add_argument(
+        "--enroll-utterances", type=int, default=10,
+        help="criterion=utterances: exact enrollment budget per speaker, so the "
+             "attacker's reference is uniform across the population",
+    )
+    parser.add_argument(
+        "--max-conversation-length", type=int, default=30,
+        help="criterion=utterances: largest L you intend to sweep. Test speakers "
+             "need 2L utterances so Singling Out has disjoint test and "
+             "calibration conversations at every L",
+    )
+    parser.add_argument("--min-enroll-minutes", type=float, default=2.0,
+                        help="criterion=duration only")
+    parser.add_argument("--min-test-minutes", type=float, default=3.0,
+                        help="criterion=duration only")
     parser.add_argument("--max-speakers", type=int, default=None,
                         help="cap the enrollment population, largest speakers first")
     parser.add_argument("--max-enroll-utterances", type=int, default=None)
@@ -143,6 +199,14 @@ def main() -> int:
 
     enroll_seconds = args.min_enroll_minutes * 60
     test_seconds = args.min_test_minutes * 60
+    test_utterances_needed = 2 * args.max_conversation_length
+    if args.criterion == "utterances":
+        print(f"criterion: {args.enroll_utterances} enrollment utterances per "
+              f"speaker, {test_utterances_needed} further for a test speaker "
+              f"(2 x L_max={args.max_conversation_length})")
+    else:
+        print(f"criterion: {args.min_enroll_minutes} min enrollment, "
+              f"{args.min_test_minutes} min test (reproduces the paper)")
 
     # Longest speakers first, so a --max-speakers cap keeps those most likely to
     # satisfy both thresholds rather than an arbitrary slice.
@@ -154,10 +218,15 @@ def main() -> int:
         if args.max_speakers and len(enroll_spk2utt) >= args.max_speakers:
             break
         utterances = sorted(by_speaker[client_id])
-        enroll, test = assign_utterances(
-            utterances, enroll_seconds, test_seconds,
-            args.max_enroll_utterances, args.max_test_utterances,
-        )
+        if args.criterion == "utterances":
+            enroll, test = assign_by_utterance_count(
+                utterances, args.enroll_utterances, test_utterances_needed,
+            )
+        else:
+            enroll, test = assign_utterances(
+                utterances, enroll_seconds, test_seconds,
+                args.max_enroll_utterances, args.max_test_utterances,
+            )
         if not enroll:
             continue
         enroll_spk2utt[client_id] = enroll
