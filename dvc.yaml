@@ -1,0 +1,27 @@
+# The published artifacts are large, immutable and already under a DOI, so DVC's
+# job here is provenance and reproducible retrieval, not versioning. Nothing in
+# data/zenodo enters git or the DVC cache: the record is the storage, and
+# data/zenodo-checksums.json is the integrity contract.
+stages:
+  fetch_zenodo:
+    cmd: python scripts/fetch_zenodo_artifacts.py --output-dir data/zenodo
+    desc: >
+      Retrieve the 27 published files of 10.5281/zenodo.23142030 and verify every
+      one against the md5 Zenodo published. 5.34 GB.
+    deps:
+      - data/zenodo-checksums.json
+      - scripts/fetch_zenodo_artifacts.py
+    outs:
+      - data/zenodo:
+          cache: false
+          persist: true
+
+  verify_published_values:
+    cmd: python examples/02_reproduce_paper_figures.py
+    desc: >
+      Check the shipped results against the values quoted in the paper's text.
+      A regression test on the data rather than on the code.
+    deps:
+      - examples/02_reproduce_paper_figures.py
+      - legal_eval/data/paper_results
+    always_changed: true

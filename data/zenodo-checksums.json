@@ -1,0 +1,174 @@
+{
+  "record": "10.5281/zenodo.23142030",
+  "record_url": "https://zenodo.org/records/23142030",
+  "api": "https://zenodo.org/api/records/23142030",
+  "title": "Score matrices and dataset definitions for \"Legally validated evaluation framework for voice anonymization\" (Interspeech 2025)",
+  "license": "cc-by-4.0",
+  "retrieved": "2026-10-10",
+  "note": "Checksums as published by Zenodo. scripts/fetch_zenodo_artifacts.py verifies every download against these, so a corrupted or substituted file is detected rather than silently used.",
+  "files": [
+    {
+      "key": "MANIFEST.json",
+      "size": 4594,
+      "md5": "40dfc55e761b752595da74aef2691220",
+      "url": "https://zenodo.org/api/records/23142030/files/MANIFEST.json/content"
+    },
+    {
+      "key": "cv11-A-filelist",
+      "size": 19539448,
+      "md5": "5f5c36344992920973781e234fc984f4",
+      "url": "https://zenodo.org/api/records/23142030/files/cv11-A-filelist/content"
+    },
+    {
+      "key": "cv11-B-filelist",
+      "size": 83336587,
+      "md5": "303b46ebe2221627436d78690d62426f",
+      "url": "https://zenodo.org/api/records/23142030/files/cv11-B-filelist/content"
+    },
+    {
+      "key": "scores_ignorant_L1.npy",
+      "size": 435987232,
+      "md5": "eb8dfce8031e0b85c82a9d98d32521de",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_ignorant_L1.npy/content"
+    },
+    {
+      "key": "scores_ignorant_L1.npy.json",
+      "size": 404934,
+      "md5": "5758d56dfdd2cd0c53cc0102a0b22ee0",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_ignorant_L1.npy.json/content"
+    },
+    {
+      "key": "scores_ignorant_L3.npy",
+      "size": 435987232,
+      "md5": "5d0c00c39399f838cf8e2da1845c6256",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_ignorant_L3.npy/content"
+    },
+    {
+      "key": "scores_ignorant_L3.npy.json",
+      "size": 404934,
+      "md5": "f4149d925b4110d2cec1b144045f43e1",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_ignorant_L3.npy.json/content"
+    },
+    {
+      "key": "scores_ignorant_L30.npy",
+      "size": 435987232,
+      "md5": "80af41da6ce94b0682893be238b079cc",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_ignorant_L30.npy/content"
+    },
+    {
+      "key": "scores_ignorant_L30.npy.json",
+      "size": 404935,
+      "md5": "abc951d098ea84046ceb4be0268c1b73",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_ignorant_L30.npy.json/content"
+    },
+    {
+      "key": "scores_informed_L1.npy",
+      "size": 435987232,
+      "md5": "d4533037f092376cebaa7f9a79e46e47",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_informed_L1.npy/content"
+    },
+    {
+      "key": "scores_informed_L1.npy.json",
+      "size": 404934,
+      "md5": "32650d3419a95509c8f2a8e28022eb32",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_informed_L1.npy.json/content"
+    },
+    {
+      "key": "scores_informed_L3.npy",
+      "size": 435987232,
+      "md5": "46cd9fec63a89691be6757806ff25c45",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_informed_L3.npy/content"
+    },
+    {
+      "key": "scores_informed_L3.npy.json",
+      "size": 404934,
+      "md5": "9cf11948d3e1b5458cf94cc564ffb5ec",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_informed_L3.npy.json/content"
+    },
+    {
+      "key": "scores_informed_L30.npy",
+      "size": 435987232,
+      "md5": "d345fbe217d3b2bfe06bf0fe4c620192",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_informed_L30.npy/content"
+    },
+    {
+      "key": "scores_informed_L30.npy.json",
+      "size": 404935,
+      "md5": "859916385f5d8b9302b4ec58ff7b7d25",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_informed_L30.npy.json/content"
+    },
+    {
+      "key": "scores_original_L1.npy",
+      "size": 435987232,
+      "md5": "f7cb385e11601ab45181417229d0190b",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_original_L1.npy/content"
+    },
+    {
+      "key": "scores_original_L1.npy.json",
+      "size": 404934,
+      "md5": "c08da83c69c04cd6ef9b6ed2a9a1b1bb",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_original_L1.npy.json/content"
+    },
+    {
+      "key": "scores_original_L3.npy",
+      "size": 435987232,
+      "md5": "d5e70a4bd0e9e96d9d935f12769786fd",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_original_L3.npy/content"
+    },
+    {
+      "key": "scores_original_L3.npy.json",
+      "size": 404934,
+      "md5": "a9a05b77c54a6f1c0df7b24c5be1b0b6",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_original_L3.npy.json/content"
+    },
+    {
+      "key": "scores_original_L30.npy",
+      "size": 435987232,
+      "md5": "ef8473b6d3fd8533fd49ed0218b9f39b",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_original_L30.npy/content"
+    },
+    {
+      "key": "scores_original_L30.npy.json",
+      "size": 404935,
+      "md5": "7d9859424e920a584a21dae9ed6ba09c",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_original_L30.npy.json/content"
+    },
+    {
+      "key": "scores_semi_informed_L1.npy",
+      "size": 435987232,
+      "md5": "6a27d2b2559338fe3871731d8ea2c549",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_semi_informed_L1.npy/content"
+    },
+    {
+      "key": "scores_semi_informed_L1.npy.json",
+      "size": 404939,
+      "md5": "429efbf15ecd4ca787d6c16b3daad829",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_semi_informed_L1.npy.json/content"
+    },
+    {
+      "key": "scores_semi_informed_L3.npy",
+      "size": 435987232,
+      "md5": "32799f00533005be328d44d14f0bb317",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_semi_informed_L3.npy/content"
+    },
+    {
+      "key": "scores_semi_informed_L3.npy.json",
+      "size": 404939,
+      "md5": "4efbe4e591bba43f6dd53252d38693eb",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_semi_informed_L3.npy.json/content"
+    },
+    {
+      "key": "scores_semi_informed_L30.npy",
+      "size": 435987232,
+      "md5": "50dfd355e80005601d6a237a67e14ecd",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_semi_informed_L30.npy/content"
+    },
+    {
+      "key": "scores_semi_informed_L30.npy.json",
+      "size": 404940,
+      "md5": "8c2b7b8d695f9a691a5c9b5054a366e7",
+      "url": "https://zenodo.org/api/records/23142030/files/scores_semi_informed_L30.npy.json/content"
+    }
+  ],
+  "total_bytes": 5339586640
+}

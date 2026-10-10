@@ -37,3 +37,7 @@ dist/
 *.zip
 PSST*
 OneDrive*
+
+# Fetched from Zenodo by scripts/fetch_zenodo_artifacts.py, 5.34 GB.
+# The DOI is the storage; data/zenodo-checksums.json is the integrity contract.
+/data/zenodo/
