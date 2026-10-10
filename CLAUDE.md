@@ -1,5 +1,12 @@
 # Working on this repository
 
+> **Read [`docs/constitution.md`](docs/constitution.md) first.** It states the
+> objective, what has actually been established and with what evidence, where
+> identity leaks in an anonymization pipeline, and the four tests a proposed
+> piece of work has to pass. This file holds the engineering invariants that
+> serve it. Claims there carry a marker: [M] measured, [P] published, [I]
+> inferred, [?] open. An unmarked claim is a mistake.
+
 Reference implementation of the Singling Out and Linkability metrics from
 Vauquier et al., Interspeech 2025. Read this before changing anything.
 

@@ -114,6 +114,13 @@ Linkability metric, that the probability and bit metrics move in opposite
 directions as the population grows, and that LID's reported bits depend as much
 on its calibration as on the system being measured.
 
+## Why this exists, and what is established
+
+[`docs/constitution.md`](docs/constitution.md) sets out the objective, the
+findings and their evidence, and where identity survives anonymization. Every
+claim carries a marker so a reader can tell a measurement from an inference:
+[M] measured, [P] published, [I] inferred, [?] open.
+
 ## Using it on your own data
 
 Point it at Kaldi-style directories, each holding a `spk2utt` file and an
