@@ -48,6 +48,7 @@ from legal_eval.metrics import (
 )
 from legal_eval.paper import PublishedCurve, load_paper_results
 from legal_eval.scoring import cosine_score_matrix
+from legal_eval.sharding import balance, partition, shard_of
 from legal_eval.sweeps import (
     SweepResult,
     eer_sweep,
@@ -62,6 +63,7 @@ from legal_eval.vpc import (
 __all__ = [
     "__version__",
     "average_embeddings",
+    "balance",
     "benchmark_vpc_run",
     "build_conversations",
     "build_speaker_embeddings",
@@ -80,9 +82,11 @@ __all__ = [
     "load_vpc_embeddings",
     "load_spk2utt",
     "load_xvectors",
+    "partition",
     "read_results",
     "rocch_eer",
     "save_score_matrix",
+    "shard_of",
     "singling_out",
     "similarity_rank_disclosure",
     "singling_out_sweep",
