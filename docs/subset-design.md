@@ -118,3 +118,111 @@ bar above the enrollment bar is worth preserving in whatever units.
 [^dufour]: O. Dufour, P. Magron, M. Rouvier, E. Vincent, "A Large-Scale
     Per-Speaker Analysis of Re-identification Risk in Speech Anonymization",
     Interspeech 2026, arXiv:2606.07210.
+
+## Related work: the community is already working on this
+
+Our subset design was arrived at from first principles, which was a mistake in
+sequence: several groups have published on exactly these questions and some of
+it supersedes or sharpens what is above. Checked against arXiv metadata rather
+than recalled.
+
+### Evaluation protocol design for anonymization
+
+**Champion, "Anonymizing Speech: Evaluating and Designing Speaker Anonymization
+Techniques", arXiv:2308.04455 (2023).** A doctoral thesis whose subject is the
+evaluation design itself, not a new anonymizer. This is the closest prior work
+to the present note and should be read before any further protocol change here.
+
+**Tomashenko, Srivastava, Wang, Vincent, Nautsch et al., "Introducing the
+VoicePrivacy Initiative", arXiv:2005.01387 (2020).** The origin of the attacker
+taxonomy (ignorant, lazy-informed, semi-informed) and of the enrollment and
+trial split this project inherits. Worth re-reading as a design document rather
+than as a challenge announcement: the choices it makes are the ones we are now
+questioning.
+
+**Tomashenko, Miao, Champion, Meyer, Wang et al., "The VoicePrivacy 2024
+Challenge Evaluation Plan", arXiv:2404.02677**, and **Tomashenko, Miao,
+Champion, Meyer, Panariello et al., "The Third VoicePrivacy Challenge",
+arXiv:2601.11846 (2026).** The evaluation plans are where the dataset decisions
+are actually recorded. The 2026 edition adds emotion and content preservation,
+which widens the utility side without widening the population.
+
+### The target speaker is an evaluation confound, and this is measured
+
+**Franzreb, Das, Polzehl and Möller, "Improving the Speaker Anonymization
+Evaluation's Robustness to Target Speakers with Adversarial Learning",
+arXiv:2508.09803 (2025).** Directly relevant and it predates our own work on
+this. Their finding: the standard evaluation **overestimates privacy** when a
+same-gender target selection algorithm is used, because anonymized speech
+carries information from both the source and the target speaker and the
+evaluation does not separate them. They add a target classifier to measure the
+target's contribution and remove it with adversarial learning.
+
+This matters for two things here. It is prior art for
+[`research-ideas.md`](research-ideas.md) idea 7, pseudo-speaker selection as an
+evaluation confound, which must now be positioned against it rather than
+presented as new. And it is the natural companion to the CNIL G3 audit in
+[`../legal_eval/pseudo_speaker.py`](../legal_eval/pseudo_speaker.py): they ask
+how much target information leaks into the evaluation, we ask whether a target
+is close enough to a real person to be accepted as them. Related, not the same,
+and the pair is stronger than either.
+
+### Per-speaker risk, and why averages hide it
+
+**Dufour, Magron, Rouvier and Vincent, "A Large-Scale Per-Speaker Analysis of
+Re-identification Risk in Speech Anonymization", arXiv:2606.07210 (2026).**
+Average-case metrics such as the EER hide large disparities between
+individuals, and they measure per-speaker linkability under a worst case at
+large scale. This is why that direction is **dropped** from our own list rather
+than pursued: it is done, and done at a population we do not have.
+
+It also bears on the sizing argument above. A design that fixes the enrollment
+budget so every attacker reference is equally strong, as ours does, makes the
+population more uniform and therefore makes per-speaker disparity easier to
+attribute to the speaker rather than to how much audio they happened to
+contribute.
+
+### Benchmark construction
+
+**Miao, Tao, Zeng and Wang, "A Benchmark for Multi-speaker Anonymization",
+arXiv:2407.05608 (2024).** Benchmark design for the multi-speaker case, which
+every corpus used here avoids by construction: LibriSpeech and Common Voice are
+both single speaker per recording. Our subsets inherit that limitation and
+should say so.
+
+### Dataset documentation and demographic composition
+
+**Papakyriakopoulos, Choi, Andrews, Bourke, Thong et al., "Augmented Datasheets
+for Speech Datasets and Ethical Decision-Making", arXiv:2305.04672 (2023).**
+Extends datasheets for datasets to speech, and applies it to five widely used
+corpora including Common Voice, finding systematic gaps in self-disclosed
+documentation. Directly applicable: our subsets are a derived dataset and
+currently ship a filelist and a construction script, not a datasheet.
+
+This is the clearest gap in what we do. Two concrete consequences for the
+subsets built from Common Voice 27:
+
+* **Selecting the largest speakers first is a demographic choice, not a neutral
+  one.** `--max-speakers` takes speakers in descending utterance count, so the
+  subset over-represents prolific contributors. Common Voice's own demographic
+  metadata is self-reported and optional, with age in ten-year bands, so the
+  composition of the result is partly unknowable and should be reported as
+  measured rather than assumed. The construction script already records the
+  gender split it achieved, which is a start and not a datasheet.
+* **A derived subset needs its own documentation.** Not the corpus's. What was
+  filtered, on what criterion, what the resulting composition is, and what the
+  subset cannot support.
+
+### What this changes about the design above
+
+Nothing in the three corrections (threshold on utterance counts, fixed
+enrollment budget, separate distractor bar) is contradicted by this literature.
+Two things are added:
+
+1. **Report the target speaker's contribution, not only the source's.**
+   Following arXiv:2508.09803, an evaluation that does not separate source from
+   target information overestimates privacy. Our subsets do not currently
+   support that measurement, because they define no target pool.
+2. **Ship a datasheet with the subsets.** Following arXiv:2305.04672.
+
+Both are now in [`research-ideas.md`](research-ideas.md).

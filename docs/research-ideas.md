@@ -168,6 +168,12 @@ nobody else reports is differentiated on its own.
 
 ## 7. Pseudo-speaker selection as an evaluation confound
 
+> **Repositioned.** Franzreb, Das, Polzehl and Moller,
+> arXiv:2508.09803 (2025), already measure this confound for the EER and
+> show the evaluation overestimates privacy under same-gender target
+> selection. What remains open is whether the legal metrics inherit the
+> same bias, which is idea 16. Do not present this as new.
+
 **Claim.** The choice of pseudo-speaker is treated as a design parameter of an
 anonymization system. It is also a parameter of the *evaluation*, and the legal
 metrics are far more sensitive to it than the EER is. A system's measured
@@ -499,6 +505,71 @@ contribution instead of or alongside.
 
 **Status.** Not started. Cheap to specify, and the measurement in point 3 is
 already possible because the VPC 2024 and 2026 attackers both exist.
+
+## 16. Separating the target speaker's contribution from the source's
+
+**Not new, and that is the point.** Franzreb, Das, Polzehl and Moller,
+arXiv:2508.09803 (2025), show that the standard evaluation **overestimates
+privacy** when a same-gender target selection algorithm is used, because
+anonymized speech carries information from both source and target and the
+evaluation does not separate them. They add a target classifier to measure the
+target's contribution and strip it with adversarial learning.
+
+**What is left to do, and why it is ours.** Their work is in EER terms. The
+legal metrics have not been checked for the same bias, and the question is not
+rhetorical: Singling Out calibrates a threshold per enrollment speaker, so if
+the target contributes to the score, the threshold absorbs some of it and the
+direction of the resulting bias is not obvious. Linkability is a rank
+statistic, so target leakage that shifts all scores equally cancels, while
+leakage correlated with the target does not.
+
+So: run their target classifier alongside our four metrics on one artifact and
+report which metrics inherit the bias. It fits the commensurability programme
+exactly, and it would be a poor result to publish a metric comparison that
+ignores a known bias in the protocol underneath it.
+
+**Relation to idea 7 and to CNIL G3.** Idea 7 (pseudo-speaker selection as an
+evaluation confound) must be repositioned: arXiv:2508.09803 has the measurement
+for the EER, so idea 7 is now "does the same confound reach the legal metrics",
+which is narrower and honest. G3 and this are different questions on the same
+object: G3 asks whether a target is close enough to a real person to be accepted
+as them, this asks how much of the target is in the score.
+
+**Venue.** Interspeech, jointly with the authors if they are willing. Approaching
+them is cheap and the overlap is obvious.
+
+**Status.** Not started. Needs a target pool recorded in the subset
+construction, which the Common Voice subsets do not currently define.
+
+## 17. A datasheet for the derived subsets
+
+**The gap.** Papakyriakopoulos, Choi, Andrews, Bourke, Thong et al.,
+arXiv:2305.04672 (2023), extend datasheets for datasets to speech and apply the
+framework to five widely used corpora including Common Voice, finding systematic
+gaps in self-disclosed documentation. Our subsets are a **derived** dataset and
+ship a filelist and a construction script. That is reproducible and it is not
+documentation.
+
+**Why it is not busywork here.** Two specific things are currently
+undocumented and both affect what a reader may conclude:
+
+* `--max-speakers` selects speakers in descending utterance count, so the
+  subset over-represents prolific contributors. Any claim about speakers in
+  general, as opposed to a comparison between systems on fixed data, does not
+  follow from it.
+* Common Voice's demographic metadata is optional and self-reported, with age in
+  ten-year bands, so the composition of the result is partly unknowable. On the
+  measured CV27 subsets, 4,121 of 10,000 enrollment speakers report no gender.
+  That number belongs in a datasheet, not in a commit message.
+
+**The deliverable.** A datasheet shipped with the filelists and the Zenodo
+record, following arXiv:2305.04672, stating the selection criterion, the
+achieved composition including how much is unknown, and explicitly what the
+subset cannot support (no multi-speaker audio, no spontaneous speech, read
+sentences only, no acoustic condition variation).
+
+**Status.** Not started. Cheap, and it is a precondition for releasing the CV27
+subsets rather than a follow-up to it.
 
 ## Cross-cutting notes
 

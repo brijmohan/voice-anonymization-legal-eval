@@ -47,8 +47,9 @@ authors to do the work. They are not authoritative, and anywhere our reading is
 wrong the comparison is wrong. They are deliberately small and commented so that
 checking them is a short task rather than a reimplementation.
 
-* LID: Bäckström et al., "Goodbye Equal Error Rate, Hello Local Information
-  Disclosure", arXiv:2607.06259.
+* LID: D. Šterns, K. Drossos, N. Fernandes, T. Bäckström and C. Palamidessi,
+  "Goodbye Equal Error Rate, Hello Local Information Disclosure: Evaluating
+  Voice Anonymisation against 1-to-N Linkage Threats", arXiv:2607.06259.
 * SRD: Chandra, Pettenò, Evans, Panariello, Todisco, Bäckström, Kolossa,
   Martin, Stafylakis, Gengembre, arXiv:2605.07291.
 """

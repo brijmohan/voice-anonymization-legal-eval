@@ -6,7 +6,8 @@
 footing.** Four groups have proposed replacing the EER and none had been run
 against the others on the same data, because published values come from
 different corpora, attackers and splits. This module computes Local Information
-Disclosure (Backstrom et al., arXiv:2607.06259) and Similarity Rank Disclosure
+Disclosure (Sterns, Drossos, Fernandes, Backstrom and Palamidessi,
+arXiv:2607.06259) and Similarity Rank Disclosure
 (Chandra et al., arXiv:2605.07291) alongside the metrics already here, so a
 comparison can be run from one artifact.
 
