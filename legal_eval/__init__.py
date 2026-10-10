@@ -9,8 +9,15 @@ in:
 
 The two metrics translate the "singling out" and "linkability" criteria of the
 Article 29 Working Party's Opinion 05/2014 on Anonymization Techniques into
-quantities that can be measured on speech data. The framework was formally
-validated by the French Data Protection Authority (CNIL).
+quantities that can be measured on speech data.
+
+These metrics were the vehicle of a compliance demonstration that the CNIL's
+Technological Expertise Department reviewed in August 2024, finding no obstacle
+to the Voice Harbor solution demonstrating compliance with the three Opinion
+05/2014 criteria (ref. MAI/SA241024). That is a technical opinion on a
+solution, not a certification of these metrics, and it does not transfer to a
+deployer. ``docs/cnil-opinion.md`` states the scope exactly. Earlier versions
+of this docstring said "formally validated", which overstated it.
 
 Everything in this package operates on *speaker embeddings* (x-vectors) or on
 precomputed cosine score matrices. Anonymization and embedding extraction are

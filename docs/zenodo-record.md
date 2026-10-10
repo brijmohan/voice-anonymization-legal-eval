@@ -66,6 +66,15 @@ VoicePrivacy Challenge
 
 ## Description
 
+> **The live Zenodo record still carries the old wording.** The description below
+> has been corrected, but the published record at
+> [10.5281/zenodo.23142030](https://doi.org/10.5281/zenodo.23142030) says "The
+> framework was formally validated by the French Data Protection Authority
+> (CNIL)", which overstates the CNIL's technical opinion. Editing a Zenodo
+> description does not mint a new DOI, so this can be fixed in place. See
+> [`cnil-opinion.md`](cnil-opinion.md). **Action required by a human with Zenodo
+> access.**
+
 Zenodo's description box is a **rich text editor**, not an HTML source field.
 Pasting HTML markup into it shows the tags literally instead of rendering them,
 and its allowed tag set does not include tables. So paste the plain text below
@@ -83,8 +92,12 @@ Interspeech 2025, pages 3229 to 3233, doi:10.21437/Interspeech.2025-1699.
 The paper introduces two metrics, Singling Out and Linkability, that translate
 the singling out and linkability criteria of the Article 29 Working Party's
 Opinion 05/2014 on Anonymization Techniques into quantities that can be
-measured on speech. The framework was formally validated by the French Data
-Protection Authority (CNIL). This record holds the data needed to reproduce the
+measured on speech. These metrics were the vehicle of a compliance demonstration
+that the CNIL's Technological Expertise Department reviewed in August 2024,
+finding no obstacle to the Voice Harbor solution demonstrating compliance with
+the three Opinion 05/2014 criteria (ref. MAI/SA241024). That is a technical
+opinion on a solution, not a certification of these metrics, and it does not
+transfer to a deployer. This record holds the data needed to reproduce the
 paper's results. The reference implementation is at
 https://github.com/brijmohan/voice-anonymization-legal-eval
 

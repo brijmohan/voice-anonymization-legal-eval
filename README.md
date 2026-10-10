@@ -11,8 +11,20 @@ The two metrics turn the *singling out* and *linkability* criteria of the
 Article 29 Working Party's [Opinion 05/2014 on Anonymization
 Techniques](https://ec.europa.eu/justice/article-29/documentation/opinion-recommendation/files/2014/wp216_en.pdf),
 endorsed by the European Data Protection Board, into quantities you can measure
-on speech. The framework was formally validated by the French Data Protection
-Authority (CNIL).
+on speech.
+
+**On the CNIL's involvement, stated precisely.** In August 2024 the CNIL's
+Technological Expertise Department reviewed Nijta's Voice Harbor solution at
+Nijta's request and concluded that it identified no obstacle to the solution
+demonstrating compliance, as such, with the three anonymization criteria of
+Article 29 Working Party Opinion 05/2014 (ref. MAI/SA241024, 28 August 2024).
+That is a technical opinion on a solution. It is **not** a certification, Nijta
+holds no Article 42 GDPR certification, and it does **not** transfer to anyone
+deploying the solution: the CNIL is explicit that a deploying organisation must
+demonstrate anonymity in its own context. The metrics in this repository were
+the vehicle of that demonstration; they were not themselves certified. See
+[`docs/cnil-opinion.md`](docs/cnil-opinion.md) for the full scope and the four
+obligations the CNIL placed on deployers.
 
 The motivating finding: **the equal error rate is close to blind to residual
 re-identification risk.** Across attacker models and conversation lengths the EER

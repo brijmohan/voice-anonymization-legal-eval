@@ -377,6 +377,129 @@ larger population to be worth a paper.
 joint commensurability paper rather than a separate submission, and that is
 probably the better use of it.
 
+## 13. Re-identification from verbal content and metadata (closes CNIL G1)
+
+**The regulatory hook.** The CNIL's letter states that the Voice Harbor
+demonstration "rests on the strong assumption that the data subject cannot be
+identified, directly or indirectly, from the metadata and the verbal content of
+their voice data", and that this "should not be taken for granted in the actual
+context of use" (**G1**, see [`cnil-opinion.md`](cnil-opinion.md)). Everything
+this project measures is the voice signal. The regulator has named the gap.
+
+**The claim to test.** Anonymizing the voice does not anonymize the record. A
+transcript carries named entities, places, employers, rare medical terms,
+idiolect and topic. A call centre recording with the voice replaced still says
+"this is Brij from Lille about account 4471". Voice Harbor masks 15+ categories
+of spoken identifiers, so the interesting question is what survives **after**
+that masking: writing style, vocabulary, topic, and the combination of
+quasi-identifiers that no entity recogniser flags.
+
+**The experiment.** Run the same Singling Out and Linkability predicates on
+**text** rather than embeddings: author identification over transcripts, using a
+text encoder in place of the x-vector. The framework is agnostic to where the
+similarity comes from, which is a real strength and has not been exploited. Then
+report the joint risk: a speaker who is unlinkable by voice and linkable by text
+is not anonymous, and the current pipeline would score them as safe.
+
+**Why it is publishable.** It makes the framework multimodal without changing
+its definitions, and it answers a question a data protection authority asked in
+writing. The negative result is also useful: if masking already suppresses
+textual linkability on realistic data, that is worth establishing rather than
+assuming.
+
+**Venue.** Interspeech or a privacy venue (PETS, or the SPSC Symposium for the
+short version). Potentially strong for a legal audience because it is the gap
+between "anonymized audio" and "anonymized record".
+
+**Status.** Not started. Needs a transcript corpus with speaker labels, which
+Common Voice does not provide usefully (read sentences, not spontaneous speech).
+Scoping required before resourcing.
+
+## 14. Do pseudo-voices identify real people? (closes CNIL G3)
+
+**The regulatory hook.** "The 'pseudo-identities' generated to anonymize a voice
+dataset warrant vigilance. While it is understood that a pseudo-identity does not
+correspond to a specific real person but to a 'mix' of several people, it should
+be ensured that it does not make it possible to identify an individual"
+(**G3**). The CNIL identified this independently of us, and nothing in this
+repository measures it.
+
+**The claim to test.** A GAN-sampled pseudo-speaker embedding is not guaranteed
+to be far from every real speaker. The sttts baseline's own configuration is
+evidence that its designers considered this live: `num_sampled: 5000` with
+`sim_threshold: 0.7` is an explicit nearest-neighbour rejection step. Nobody has
+reported what that threshold achieves, nor what happens without it.
+
+**The experiment, which is cheap.** For every generated pseudo-speaker, compute
+the similarity to every real speaker in the generator's training pool and report
+the distribution of the maximum. Three quantities:
+
+1. **Nearest-real-speaker similarity.** How close does the closest pseudo-voice
+   get to a real person, and does any exceed the verification threshold a
+   speaker verification system would use to accept?
+2. **Collision rate between pseudo-voices.** Two source speakers assigned
+   near-identical targets create a false link, which is a linkability failure
+   that no current metric reports.
+3. **Sensitivity to `sim_threshold`.** Sweep it, including removing it, and show
+   what it buys.
+
+All of it runs on embeddings we already have. No anonymization, no GPU hours
+beyond extraction.
+
+**Why it matters beyond compliance.** This is the first measurement that treats
+the pseudo-speaker pool itself as an attack surface. If a pseudo-voice can be
+matched to a real speaker, the anonymization has substituted one identity for
+another rather than removing one.
+
+**Venue.** Interspeech or ICASSP. Also directly usable in the Nijta POC report,
+which is the rare case where a research result has an immediate commercial use.
+
+**Status.** Not started, highest priority in
+[`constitution.md`](constitution.md). The GAN model and the embedding pools are
+on the workstation.
+
+## 15. A standing re-assessment protocol (closes CNIL G4)
+
+**The regulatory hook.** "We invite NIJTA to keep this demonstration up to date
+in light of developments in anonymization and re-identification techniques, so as
+to remain at the state of the art. This recommendation extends to the
+demonstration of anonymity carried out by the entities implementing the
+solution" (**G4**).
+
+**The observation.** A privacy demonstration has a shelf life, and nobody has
+said how long. An attacker model that was realistic in 2024 is not the frontier
+in 2026: SSL encoders improved, and the semi-informed attacker in VPC 2026 is
+stronger than its predecessor. A number computed once is a claim about a past
+state of the art, and the metric does not record which.
+
+**The contribution.** A protocol, not a metric:
+
+1. **Version the attacker, not just the system.** Every reported privacy value
+   carries the attacker model and its training data, the way an EER is
+   meaningless without them. This repository already records attacker and
+   population; the step is making it a required field rather than a convention.
+2. **An attack registry with a re-run obligation.** A dated list of published
+   attacks, each with the code to reproduce it, and a rule for when a
+   demonstration must be recomputed. "Annually, or on publication of an attack
+   that beats the current best by more than its error bar" is a defensible rule
+   and nobody has proposed one.
+3. **Report the decay.** Recompute an old demonstration under the current
+   attacker and publish the delta. That number, how much a two-year-old
+   anonymization claim has degraded, does not exist anywhere and would be
+   genuinely new.
+
+**Why it is the right kind of work for us.** It is convening and
+infrastructural, it suits the PSST network, and it is what a standards body
+needs and cannot produce. Nijta's CARE phase already promises annual
+re-assessment commercially, so the protocol has a customer.
+
+**Venue.** A journal, because a protocol needs to be citable and stable:
+Computer Speech and Language, or Speech Communication. Possibly a standards
+contribution instead of or alongside.
+
+**Status.** Not started. Cheap to specify, and the measurement in point 3 is
+already possible because the VPC 2024 and 2026 attackers both exist.
+
 ## Cross-cutting notes
 
 **The name collision is a prerequisite for anything VPC-facing.** VPC 2026
@@ -400,6 +523,12 @@ disagreement that was a tie-break on saturated values.
 **Check the ceiling before blaming the metric.** Linkability is bounded by 1 and
 the bit metrics by `log2 N`. Before concluding that a metric fails to separate
 two systems, check whether it had any range left at that population.
+
+**Cite the CNIL obligation where one applies.** Ideas 13, 14 and 15 close
+gaps a data protection authority named in writing (**G1**, **G3**, **G4**), and
+idea 11 is the measurement **G2** requires. Saying so changes how a reviewer
+reads the motivation, and it is true. See [`cnil-opinion.md`](cnil-opinion.md)
+for the exact wording, and do not overstate it beyond that.
 
 **Artifacts exist and should be cited.** Code on GitHub, data at
 [10.5281/zenodo.23142030](https://doi.org/10.5281/zenodo.23142030). Any of these

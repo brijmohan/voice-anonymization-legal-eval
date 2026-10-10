@@ -32,13 +32,40 @@ Everything else is instrumental. Three consequences:
 3. **Reproducibility is a deliverable, not hygiene.** If a result cannot be
    recomputed from archived artifacts, it does not count as established.
 
+### What the CNIL actually said, and what it obliges us to do
+
+[`cnil-opinion.md`](cnil-opinion.md) is authoritative. In summary **[P]**: in
+August 2024 the CNIL's Technological Expertise Department reviewed the **Voice
+Harbor solution**, not this framework, and identified no obstacle to that
+solution demonstrating compliance with the three Opinion 05/2014 criteria. It is
+a technical opinion, **not a certification**, and it does **not** transfer to a
+deployer. This framework was the instrument of the demonstration. Describing it
+as "validated" overstates the document, and this repository did so until it was
+read.
+
+The letter places four obligations on the demonstration, and each names a gap
+we are accountable for closing. They are cited throughout as **G1** to **G4**:
+
+| | Obligation | Status |
+|---|---|---|
+| **G1** | Identification from **metadata and verbal content** is a "strong assumption" the CNIL says must not be taken for granted | **[?]** Nothing here measures it. Idea 13. |
+| **G2** | Re-identification risk must be quantified against a **concrete attacker**, accounting for the diversity of samples available to it and its capability | Partly met. We report population and attacker model, and saturation at `N = 29` is why idea 11 exists. |
+| **G3** | **Pseudo-voices** must not make it possible to identify an individual | **[?]** Nothing here measures it. Idea 14. |
+| **G4** | The demonstration must be kept **at the state of the art** as attacks evolve | Partly met. The commensurability programme is this, but there is no standing protocol. Idea 15. |
+
+G2 is worth dwelling on: it is a data protection authority **requiring** the two
+axes this project reports. It is the regulatory basis for refusing to quote a
+privacy number without a population size and an attacker model, and it turns
+Finding 3.1's saturation result from an inconvenience into a compliance problem.
+
 ### What would falsify the project's premise
 
 If the EDPB criteria turned out to be measurable only under assumptions no real
 deployment satisfies, or if a regulator rejected the operationalisation, the
-framework would be a modelling exercise. The CNIL validation **[P]** is what
+framework would be a modelling exercise. The CNIL opinion **[P]** is what
 currently stands against that, and it is the single most load-bearing external
-fact we rely on.
+fact we rely on, which is exactly why its scope is stated precisely rather than
+favourably.
 
 ---
 
@@ -191,7 +218,9 @@ of question where a measurement would settle a lot of hand-waving.
 ### 4.4 Pseudo-speaker selection
 
 This is the part most often treated as a detail and is in fact an evaluation
-confound.
+confound. **The CNIL flagged it independently** (**G3**): a pseudo-identity is
+understood to be a "mix" of several people, and the letter asks us to ensure it
+"does not make it possible to identify an individual".
 
 **Assignment granularity decides whether linkability survives.** If a
 pseudo-speaker is assigned per source speaker, every utterance of that speaker
@@ -254,13 +283,22 @@ section is the filter, not the list.
 
 ### Current priorities, in order
 
-1. **Metric commensurability on a population with range.** Blocked on the
-   evaluation set, which is why Common Voice work is priority zero.
-2. **The LID calibration specification.** Needs its authors. Our role is the
+Ordered by whether a regulator has already asked for the answer. A **G**
+reference means the CNIL named it.
+
+1. **Pseudo-voice identifiability** (idea 14, **G3**). The CNIL asked for this
+   by name and we do not measure it. It is also cheap. Highest priority.
+2. **Metric commensurability on a population with range** (idea 11, **G2**).
+   Blocked on the evaluation set, which is why the Common Voice work sits in
+   front of it.
+3. **Content and metadata leakage** (idea 13, **G1**). The CNIL calls the
+   current position a "strong assumption". Larger effort, and it needs scoping
+   before it needs resourcing.
+4. **A standing re-assessment protocol** (idea 15, **G4**). Cheap to specify,
+   and it converts a one-off demonstration into something with a shelf life.
+5. **The LID calibration specification.** Needs its authors. Our role is the
    measurement and the question, not the answer.
-3. **Subset design correction.** Implemented; needs writing up.
-4. **Prosody and pseudo-speaker ablations** (4.4, 4.5). Cheap, and they produce
-   the pedagogical content this field is short of.
+6. **Subset design correction.** Implemented; needs writing up.
 
 ### Diversion warnings
 
