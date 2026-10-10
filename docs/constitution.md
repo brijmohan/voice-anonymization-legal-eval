@@ -144,7 +144,31 @@ bootstrap removed both **[M]**.
 **A standard error of exactly zero is a signal that the resampling is not
 capturing the right source of variation.** This is now a standing check.
 
-### 3.3 Released artifacts are more revealing than they look
+### 3.3 Our LibriSpeech numbers are bounded by content leakage
+
+Every Linkability, Singling Out, SRD and LID value we report on `libri_dev` and
+`libri_test` is measured on a corpus where **speakers are identifiable from
+their vocabulary alone**. Franzreb, Das, Polzehl and Möller, arXiv:2601.13107
+(2026) **[P]**:
+
+> the books read by the Librispeech speakers are so distinct, that speakers can
+> be identified by their vocabularies. Even perfect anonymizers cannot prevent
+> this identity leakage.
+
+The metrics are not wrong: they measure the voice signal and that is what they
+claim to measure. What does not follow is the further claim that a system
+*anonymizes* those speakers, because an attacker with the transcript does not
+need the voice. This is CNIL obligation **G1** demonstrated on the exact corpus
+the whole VoicePrivacy line uses, and it is the strongest external evidence
+that G1 is a real gap rather than regulatory caution **[I]**.
+
+It also supplies an argument for Common Voice we had not made. LibriSpeech
+leaks because each speaker reads a distinct book; Common Voice speakers read
+short sentences from a shared pool, so per-speaker vocabulary should be far less
+distinctive **[?]**. That is testable with their method, and if it holds it
+justifies the CV27 subsets on firmer ground than population size.
+
+### 3.4 Released artifacts are more revealing than they look
 
 The released score matrices are **exactly rank 256**, the x-vector dimension:
 the singular spectrum collapses by four orders of magnitude immediately after

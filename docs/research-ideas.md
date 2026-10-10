@@ -385,6 +385,15 @@ probably the better use of it.
 
 ## 13. Re-identification from verbal content and metadata (closes CNIL G1)
 
+> **Repositioned, and no longer new.** Franzreb, Das, Polzehl and Möller,
+> arXiv:2601.13107 (2026), already show that LibriSpeech speakers are
+> identifiable from their vocabularies because each reads a distinct book, and
+> that no anonymizer can prevent it. Cite and build on that rather than opening
+> the question. What remains: whether Common Voice leaks the same way (shared
+> sentence pool suggests not, and it is testable with their method), and whether
+> the legal metrics can be run on a text encoder to give a joint voice-and-text
+> risk. They also recommend EdAcc as a complementary corpus.
+
 **The regulatory hook.** The CNIL's letter states that the Voice Harbor
 demonstration "rests on the strong assumption that the data subject cannot be
 identified, directly or indirectly, from the metadata and the verbal content of
