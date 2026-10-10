@@ -54,6 +54,13 @@ from legal_eval.metrics import (
     singling_out,
 )
 from legal_eval.paper import PublishedCurve, load_paper_results
+from legal_eval.pseudo_speaker import (
+    PseudoSpeakerAudit,
+    audit_pseudo_speakers,
+    chance_identification_rate,
+    population_for_chance,
+    verification_threshold,
+)
 from legal_eval.scoring import cosine_score_matrix
 from legal_eval.sharding import balance, partition, shard_of
 from legal_eval.sweeps import (
@@ -68,6 +75,10 @@ from legal_eval.vpc import (
 )
 
 __all__ = [
+    "verification_threshold",
+    "population_for_chance",
+    "chance_identification_rate",
+    "audit_pseudo_speakers",
     "__version__",
     "average_embeddings",
     "balance",
@@ -98,6 +109,7 @@ __all__ = [
     "similarity_rank_disclosure",
     "singling_out_sweep",
     "DisclosureResult",
+    "PseudoSpeakerAudit",
     "PublishedCurve",
     "SweepResult",
     "write_results",
