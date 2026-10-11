@@ -50,7 +50,8 @@ norm.
 
 **Test.** `tests/test_pseudo_speaker.py` asserts the fixture's own verifier
 reaches EER below 0.01, so a broken fixture fails loudly instead of making the
-measurement look permissive.
+measurement look permissive. (That bound is a property of the fixture, not a
+result: no marker applies.)
 
 ### A classifier that memorises the speaker, not the attribute
 

@@ -51,7 +51,7 @@ rank is bounded by the embedding dimension rather than by its shape. Measured on
 a random 3,000 x 3,000 block, the singular value spectrum collapses by four
 orders of magnitude immediately after index **256** (exactly the x-vector
 dimension), and a rank-256 reconstruction reproduces the released scores to
-within 2e-07, which is float32 rounding:
+within 2e-07, which is float32 rounding **[M]**:
 
 ```
 rank  192: sigma_k/sigma_1 = 6.1e-06

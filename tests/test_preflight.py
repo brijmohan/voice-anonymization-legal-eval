@@ -426,3 +426,67 @@ def test_a_nonsense_excluded_field_fails():
     result = check_exclusions_declared(report([{"n": 29}], excluded="some"))
     assert result.status == "fail"
     assert "got str" in result.detail
+
+
+def test_a_marker_applies_across_a_wrapped_sentence():
+    """The failure that corrected this tool.
+
+    A line-based version produced 18 candidates over this project's own
+    documentation, nearly all of them one sentence wrapped across two lines
+    with its marker on the second. A marker applies to the claim it is part
+    of, wherever the text happens to wrap.
+    """
+    text = (
+        "The optimiser has no finite maximiser; ours stopped at w = 199.4\n"
+        "and ALID then equals log2 N exactly **[M]**.\n"
+    )
+    assert unmarked_claims(text) == []
+
+
+def test_separate_paragraphs_are_judged_separately():
+    """A marker in one paragraph must not excuse the next."""
+    text = (
+        "The verifier gives an EER of 0.0867 **[M]**.\n"
+        "\n"
+        "The population gives a collision rate of 0.9279.\n"
+    )
+    found = unmarked_claims(text)
+    assert len(found) == 1
+    assert found[0][0] == 3
+
+
+def test_the_reported_line_number_is_the_paragraph_start():
+    text = (
+        "intro with no claim\n"
+        "\n"
+        "This paragraph reaches 0.95 and wraps\n"
+        "onto a second line.\n"
+    )
+    found = unmarked_claims(text)
+    assert len(found) == 1
+    assert found[0][0] == 3
+
+
+def test_a_fence_ends_the_preceding_paragraph():
+    """A marker inside a code block must not excuse prose before it."""
+    text = (
+        "This yields 0.42.\n"
+        "```\n"
+        "value [M] 0.42\n"
+        "```\n"
+    )
+    found = unmarked_claims(text)
+    assert len(found) == 1
+    assert found[0][0] == 1
+
+
+def test_a_table_row_ends_the_preceding_paragraph():
+    text = (
+        "The numbers below.\n"
+        "| metric | value |\n"
+        "\n"
+        "This reaches 0.9 with no marker.\n"
+    )
+    found = unmarked_claims(text)
+    assert len(found) == 1
+    assert found[0][0] == 4

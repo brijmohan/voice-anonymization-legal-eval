@@ -27,6 +27,7 @@ Exit status is 0 when nothing failed, 1 when something did.
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -500,32 +501,76 @@ def unmarked_claims(text: str) -> list[tuple[int, str]]:
     mistake. This finds the lines that state a measured quantity without
     saying where it came from.
 
-    The rule is deliberately narrow: a line is only a candidate if it contains
-    a digit and a word that asserts a result. A wider rule flagged ordinary
-    prose and would be ignored.
+    The unit is the **paragraph**, not the line. A first version checked lines,
+    and running it over this project's own documentation produced 18
+    candidates of which nearly all were one sentence wrapped across two lines
+    with its marker on the second. A marker applies to the claim it is part of,
+    wherever the text happens to wrap.
+
+    The rule is otherwise deliberately narrow: an assertion has to be followed
+    closely by a number. Without that, "one GPU gives one worker" and "a
+    preservation commitment measured in decades" both matched.
+
+    **This one is advisory and is not in** :data:`CHECKS`. It cannot tell a
+    result from a threshold a test chose, or from a cross-reference that
+    happens to contain a numeral, and over this project's own documentation it
+    leaves two false positives out of roughly 100 paragraphs that mention a
+    number. That is useful as a reading aid and not sound enough to gate on,
+    so it does not gate. The tuning history is worth keeping: line-based gave
+    18 candidates dominated by wrapped sentences, paragraph-based with a loose
+    rule gave 22 dominated by polysemous verbs, and the current rule gives 2.
 
     Args:
         text: Markdown source.
 
     Returns:
-        ``(line number, line)`` for each unmarked candidate, 1-indexed.
+        ``(line number, first line)`` for each unmarked candidate paragraph,
+        1-indexed on the paragraph's first line.
     """
     markers = ("[M]", "[P]", "[I]", "[?]")
-    asserts = ("measured", "we found", "gives ", "reads ", "yields ",
-               "scores ", "reaches ", "equals ")
-    out = []
+    # The assertion has to be followed by a number for the paragraph to be a
+    # candidate. Without that, "one GPU gives one worker", "a preservation
+    # commitment measured in decades" and "--speaker-counts linear gives the
+    # paper's grid" all matched, and a check with that many false alarms is one
+    # nobody runs. "measured on" and "measured in" are excluded outright: they
+    # introduce provenance or an idiom, never a quantity.
+    claim = re.compile(
+        r"\b(?:measured|we found|gives|reads|yields|scores|reaches|equals)\b"
+        r"(?!\s+(?:on|in|against)\b)"
+        r"(?:\s+[A-Za-z,'`\-]+){0,5}\s+[~<>=]?\s*[0-9]",
+        re.IGNORECASE,
+    )
+
+    # Gather paragraphs, skipping fenced code, tables, quotes and headings.
+    paragraphs: list[tuple[int, list[str]]] = []
+    current: list[str] = []
+    start = 0
     in_code = False
     for number, line in enumerate(text.splitlines(), 1):
         stripped = line.strip()
         if stripped.startswith("```"):
             in_code = not in_code
+            if current:
+                paragraphs.append((start, current))
+                current = []
             continue
-        if in_code or stripped.startswith(("|", ">", "#")):
+        skip = in_code or stripped.startswith(("|", ">", "#"))
+        if not stripped or skip:
+            if current:
+                paragraphs.append((start, current))
+                current = []
             continue
-        if any(m in line for m in markers):
+        if not current:
+            start = number
+        current.append(stripped)
+    if current:
+        paragraphs.append((start, current))
+
+    out = []
+    for first_line, lines in paragraphs:
+        body = " ".join(lines)
+        if any(m in body for m in markers):
             continue
-        if not any(c.isdigit() for c in line):
-            continue
-        if any(a in line.lower() for a in asserts):
-            out.append((number, stripped))
+        if claim.search(body):
+            out.append((first_line, lines[0]))
     return out

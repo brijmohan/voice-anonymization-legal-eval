@@ -30,7 +30,8 @@ have public configs and published results. Runbook in
 Early signal: mcadams leaves Linkability at 0.966 against a semi-informed
 attacker where asrbn reaches 0.793, while `1 - EER` separates them by only 8
 points against Linkability's 17 and Singling Out's 32. Our mcadams EER
-reproduces VPC's published 5.617 exactly, so the pipeline matches theirs.
+reproduces VPC's published 5.617 exactly, so the pipeline matches theirs
+**[M]**.
 
 **Still needed.** sttts. nac was dropped: it anonymizes at 240 utterances an
 hour, making `train-clean-360` an 18 day job, and VPC's own code calls the loop
@@ -63,7 +64,7 @@ short, sharp result with immediate practical consequences.
 **Already in hand.** Measured on the paper's own 22,024 x 4,949 matrices: the
 singular value spectrum collapses by four orders of magnitude immediately after
 index 256, which is the x-vector dimension, and a rank-256 reconstruction
-reproduces the released scores to 2e-07. Written up in
+reproduces the released scores to 2e-07 **[M]**. Written up in
 [`data-release.md`](data-release.md).
 
 **Still needed.** The honest gap: a plain SVD does not complete the attack,
