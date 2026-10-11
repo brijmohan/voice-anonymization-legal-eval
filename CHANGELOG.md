@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+**New: `legal-eval preflight`, the hazards as checks.** Every failure recorded
+in [`docs/operational-hazards.md`](docs/operational-hazards.md) produced a
+plausible number rather than an error, and three of them were written down as
+habits and then recurred anyway. `legal_eval.preflight` runs the subset that
+can be judged from a run's own output and names the failure each check guards
+against. Running it over this project's own results corrected the checks twice:
+one threshold failed on correct data, and a second check conflated a legitimate
+zero standard error at a metric's ceiling with a broken one.
+
+**New: `legal_eval.audio_integrity`.** A system that emits silence instead of
+speech is rewarded for it: the embedding sits at chance distance from every
+enrolled speaker, and chance is the best privacy score attainable. The 2026
+McAdams baseline did exactly this on one Common Voice utterance, producing a
+file of the right length that was 99.93% exact zeros. No evaluation in the
+field checks for it. `check_anonymized` judges whether output is speech at all,
+with thresholds loose enough that heavy but legitimate processing passes.
+
+**New: `legal_eval.vpc.unpaired_datasets`.** `pair_datasets` recognises only
+VPC's naming, so a differently named embedding directory was discovered and
+then silently dropped, which would have produced a comparison covering no
+Common Voice at all with nothing failing.
+
+**New: `scripts/check_scp_readers.py` and `scripts/merge_embedding_shards.py`.**
+The first finds audio readers that cannot open a Kaldi extended filename, a
+defect that appeared at four sites in one pipeline and twice survived a grep.
+The second merges sharded embedding directories, which was needed because the
+challenge extractor's own parallel path fails for this attacker; sharded output
+is verified bit-identical to a single pass.
+
+**New: [`docs/cv27-datasheet.md`](docs/cv27-datasheet.md).** Including the
+figure to read before using the gender labels: gender is absent for 41% of
+speakers and about 72% male among those who report it.
+
+
 **New: `legal_eval.comparison`, for putting the recent privacy metrics on one
 footing.** Four groups have proposed replacing the EER and none had been run
 against the others on the same data, because published values come from

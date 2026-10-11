@@ -163,6 +163,9 @@ legal-eval singling-out --enroll-dir data/cv11-B --test-dir data/cv11-A \
     --output results/singling_out_informed_L1.json
 
 legal-eval plot --results-dir results --output figures/paper_figure.pdf
+
+# Check the result against failures we have already made
+legal-eval preflight results.json
 ```
 
 Or from Python:
@@ -221,6 +224,38 @@ python examples/03_verify_against_score_matrices.py --release-dir release/
 ```
 
 Read [`docs/data-release.md`](docs/data-release.md) before redistributing them.
+
+## Checking a result before you believe it
+
+```sh
+legal-eval preflight results.json
+```
+
+Every check in it exists because a specific wrong number got as far as a draft
+or a launch, and each one prints the failure it guards against. The point is
+that none of those failures raised an error. They all produced a plausible
+number:
+
+| Check | What it caught |
+|---|---|
+| `population_recorded` | Without `N` nothing reads against its own chance level |
+| `exclusions_declared` | A destroyed utterance scores at chance, so dropping one quietly flatters the system |
+| `no_zero_standard_error` | A standard error of exactly zero is a bug, not precision |
+| `saturation_declared` | A metric at its ceiling cannot separate systems |
+| `srd_idr_matches_linkability` | They are the same quantity, not two metrics agreeing |
+| `lid_calibration_recorded` | Only the fitted slope reaches the result, so LID without it cannot be reproduced |
+| `metric_directions` | How a coarsening gets misread as an inversion |
+
+Two of these corrected themselves when first run over this project's own
+output, which is the use we would most encourage: run it on numbers the
+harness did not produce.
+
+Related, and the one that is easiest to miss: a system that emits silence
+instead of speech is rewarded for it, because silence scores at chance and
+chance is the best privacy score attainable.
+`legal_eval.audio_integrity.check_anonymized` tells the two apart, and
+[`docs/constitution.md`](docs/constitution.md) section 3.9 has the case that
+prompted it.
 
 ## How we know it is right
 
