@@ -13,16 +13,14 @@ Techniques](https://ec.europa.eu/justice/article-29/documentation/opinion-recomm
 endorsed by the European Data Protection Board, into quantities you can measure
 on speech.
 
-**Two of three criteria, not three.** Article 29 Working Party Opinion 05/2014
-sets three tests for anonymity: **singling out**, **linkability** and
-**inference**. This package implements the first two. It does **not** implement
-inference, and no number it produces speaks to whether an attacker can infer
-attributes about a person from anonymized speech. A dataset can pass both
-metrics here and still fail the third criterion, in which case it is not
-anonymous. Anyone using this to support an anonymity claim has to address
-inference separately. Membership inference is the natural operationalisation;
-see Tsaprazlis et al., "VoxGuard", ICASSP 2026, and
-[`docs/constitution.md`](docs/constitution.md) section 3.5.
+**All three criteria, at different levels of maturity.** Article 29 Working
+Party Opinion 05/2014 sets three tests: **singling out**, **linkability** and
+**inference**. The first two are the published, CNIL-reviewed metrics. The
+third, `legal_eval.inference`, is **new and far less validated**: it measures
+attribute inference, how much better than the population prior an attacker
+predicts a sensitive attribute from the released artifact. Treat it as a lower
+bound from a linear probe, not as a guarantee, and read its own limitations
+before quoting it. A null result bounds one classifier on one set of labels.
 
 **On the CNIL's involvement, stated precisely.** In August 2024 the CNIL's
 Technological Expertise Department reviewed Nijta's Voice Harbor solution at

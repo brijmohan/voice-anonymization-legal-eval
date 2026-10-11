@@ -168,7 +168,7 @@ short sentences from a shared pool, so per-speaker vocabulary should be far less
 distinctive **[?]**. That is testable with their method, and if it holds it
 justifies the CV27 subsets on firmer ground than population size.
 
-### 3.5 We implement two of the three criteria, and had not said so
+### 3.5 The third criterion, and how it was missing
 
 Opinion 05/2014 sets three tests: singling out, linkability and **inference**.
 This project implements the first two and has never implemented the third
@@ -180,12 +180,35 @@ This is a larger gap than any of G1 to G4 and it sat unstated while the
 repository was named for the criteria. It was found by a venue scan, not by
 reading our own scope.
 
-Membership inference is the natural operationalisation, and Tsaprazlis et al.,
-"VoxGuard: Evaluating User and Attribute Privacy in Speech via Membership
-Inference", ICASSP 2026, is the first paper to bring it to speech anonymization
-**[P]**. Whether their formulation satisfies the Opinion's inference criterion
-is **[?]** and is precisely the kind of claim the validation ledger exists to
-settle before we build on it.
+**Membership inference is the wrong instrument**, and this was settled by
+reading the Opinion rather than by experiment. It asks about deducing *the value
+of an attribute*; membership inference asks whether a record was present, which
+is nearer to singling out. A system can resist one and leak the other in either
+direction **[I]**.
+
+`legal_eval.inference` now implements **attribute inference** instead: a linear
+probe for a sensitive attribute on features from the released artifact, reported
+as the share of available headroom above the population prior, so 0 is no
+disclosure and 1 is full determination **[M]**.
+
+Prior art, and the method follows it: Noe, Mohammadamini, Matrouf, Parcollet,
+Nautsch and Bonastre, Interspeech 2021, introduce attribute-driven privacy and
+measure concealment with a classifier **[P]**; Vali and Backstrom, Interspeech
+2024, show vector-quantized bottlenecks leak through codebook occupancy, which
+independently supports section 4.3 **[P]**; Feng, Peri and Narayanan,
+Interspeech 2022, name the attack **[P]**.
+
+Two things are ours rather than theirs. The measurement is on the **released
+artifact** rather than the internal representation, which matters because
+vocoder drift means those differ. And it is reported **against the prior**,
+because a raw accuracy is not interpretable: 71% on an attribute whose majority
+class is 70% is nothing.
+
+**Maturity, stated plainly.** This is the least validated thing in the package.
+A linear probe gives a lower bound, so a null result is weak evidence of safety,
+and demographic labels are self-reported and noisy. It should not carry the same
+weight as Singling Out or Linkability until it has been run on real data and
+compared against a stronger attacker.
 
 ### 3.6 Released artifacts are more revealing than they look
 

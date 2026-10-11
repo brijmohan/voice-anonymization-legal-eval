@@ -11,10 +11,11 @@ The two metrics translate the "singling out" and "linkability" criteria of the
 Article 29 Working Party's Opinion 05/2014 on Anonymization Techniques into
 quantities that can be measured on speech data.
 
-Opinion 05/2014 sets *three* criteria. The third, **inference**, is not
-implemented here and nothing in this package measures it. Data can pass both
-metrics below and still fail the inference test, in which case it is not
-anonymous. Treat the output as evidence on two of three criteria.
+Opinion 05/2014 sets *three* criteria. The third, **inference**, is measured by
+``legal_eval.inference`` as attribute inference: how much better than the
+population prior an attacker predicts a sensitive attribute from the released
+artifact. It is newer and less validated than the other two, and a null result
+bounds one classifier on one set of labels rather than proving anonymity.
 
 These metrics were the vehicle of a compliance demonstration that the CNIL's
 Technological Expertise Department reviewed in August 2024, finding no obstacle
@@ -44,6 +45,11 @@ from legal_eval.embeddings import (
     build_speaker_embeddings,
     build_test_embeddings,
     l2_normalize,
+)
+from legal_eval.inference import (
+    AttributeDisclosure,
+    attribute_disclosure,
+    attribute_disclosure_by_speaker,
 )
 from legal_eval.io import (
     load_score_matrix,
@@ -80,6 +86,9 @@ from legal_eval.vpc import (
 )
 
 __all__ = [
+    "AttributeDisclosure",
+    "attribute_disclosure",
+    "attribute_disclosure_by_speaker",
     "verification_threshold",
     "population_for_chance",
     "chance_identification_rate",
