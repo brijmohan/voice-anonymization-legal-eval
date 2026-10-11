@@ -254,6 +254,42 @@ def cmd_plot(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_preflight(args: argparse.Namespace) -> int:
+    """Run the hazard checks over a comparison's JSON output."""
+    import json
+
+    from .preflight import failed, run_preflight
+
+    try:
+        report = json.loads(args.report.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        print(f"no such file: {args.report}", file=sys.stderr)
+        return 2
+    except json.JSONDecodeError as exc:
+        print(f"{args.report} is not valid JSON: {exc}", file=sys.stderr)
+        return 2
+    if not isinstance(report, dict):
+        print(f"{args.report} should hold a JSON object", file=sys.stderr)
+        return 2
+
+    results = run_preflight(report)
+    for result in results:
+        print(result)
+        if result.status in ("fail", "warn"):
+            print(f"       guards against: {result.hazard}")
+
+    bad = failed(results)
+    warned = [r for r in results if r.status == "warn"]
+    print()
+    if bad:
+        print(f"{len(bad)} check(s) failed. These are not style points: every "
+              f"one of them has produced a plausible wrong number before.")
+        return 1
+    print(f"nothing failed. {len(warned)} warning(s), "
+          f"{sum(1 for r in results if r.status == 'skip')} skipped.")
+    return 0
+
+
 def cmd_demo(args: argparse.Namespace) -> int:
     """Run the whole pipeline on synthetic embeddings."""
     from legal_eval.demo import simulate_anonymization, split_corpus, synthetic_corpus
@@ -470,6 +506,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--output", type=Path, required=True)
     _add_common(p)
     p.set_defaults(func=cmd_vpc)
+
+    p = subparsers.add_parser(
+        "preflight",
+        help="check a comparison's output against the failures we have already made",
+    )
+    p.add_argument("report", type=Path,
+                   help="JSON written by examples/04_compare_privacy_metrics.py")
+    p.set_defaults(func=cmd_preflight)
 
     p = subparsers.add_parser("demo", help="run everything on synthetic embeddings")
     p.add_argument("--output-dir", type=Path, default=Path("demo_output"))

@@ -35,6 +35,19 @@ are easy to change by accident:
 - RNG seeding, and whether repeated runs are genuinely independent
 - which utterances form a conversation at each conversation length
 
+**A failure that produced a wrong number becomes a check, not a note.**
+`legal_eval/preflight.py` holds the hazards that can be judged from a run's
+own output, each carrying the failure it guards against, and
+[`docs/operational-hazards.md`](docs/operational-hazards.md) holds the full
+record including the ones no check can reach. When something goes wrong, ask
+first whether `preflight` could have caught it. Three hazards were written down
+as habits and then recurred, which is what the checks exist to stop.
+
+A check that fails on legitimate data is worse than no check, because it gets
+switched off. The IdR against Linkability threshold was set at 0.05, failed on
+this project's own demo output, and had to be widened to where the gap cannot
+be sampling noise.
+
 **Deviations from the original experiment code are deliberate and documented.**
 Three defects in the internal scripts are corrected here, and each one is
 reachable in its original form behind a flag where it affects published results.
@@ -119,6 +132,7 @@ pytest -q
 ruff check legal_eval tests examples scripts
 python examples/02_reproduce_paper_figures.py    # paper values still reproduce
 legal-eval demo --output-dir /tmp/demo           # whole pipeline, synthetic data
+legal-eval preflight results.json               # the hazards, as checks
 ```
 
 ## Scope

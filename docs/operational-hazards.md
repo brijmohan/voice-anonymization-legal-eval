@@ -1,5 +1,15 @@
 # Operational hazards, with the test or habit that catches each
 
+> **The mechanical ones are now a command.** `legal-eval preflight
+> results.json` runs every hazard that can be judged from a run's own output,
+> and names the failure each one guards against. Run it before believing a
+> result and before sending one to anybody. The entries below are the whole
+> record, including the hazards no check can reach; the preflight covers the
+> subset it can.
+>
+> Each failure here produced a plausible number, not an error. That is the
+> reason for the command: nothing raised, and the worst of them reached a draft.
+
 Every entry here cost real time on this project. They are recorded because
 several recurred after being fixed once, which means the fix was not the
 problem: not writing it down was.
@@ -262,6 +272,9 @@ it. The outer save was patched first and would not have been enough.
 ---
 
 ## Before launching anything long
+
+0. `legal-eval preflight` on the last comparable result, so a known
+   failure is not carried into a new run.
 
 1. Warm up with **one** worker and read its first log lines, then warm up
    again **at the worker count you will run**. One worker does not exercise

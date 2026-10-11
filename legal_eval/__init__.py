@@ -65,6 +65,14 @@ from legal_eval.metrics import (
     singling_out,
 )
 from legal_eval.paper import PublishedCurve, load_paper_results
+from legal_eval.preflight import (
+    CheckResult,
+    ceilings,
+    chance_levels,
+    failed,
+    run_preflight,
+    unmarked_claims,
+)
 from legal_eval.pseudo_speaker import (
     PseudoSpeakerAudit,
     audit_pseudo_speakers,
@@ -86,6 +94,12 @@ from legal_eval.vpc import (
 )
 
 __all__ = [
+    "CheckResult",
+    "ceilings",
+    "chance_levels",
+    "failed",
+    "run_preflight",
+    "unmarked_claims",
     "AttributeDisclosure",
     "attribute_disclosure",
     "attribute_disclosure_by_speaker",

@@ -1,0 +1,351 @@
+"""Tests for the hazard checks.
+
+Each check exists because a specific wrong number got as far as a draft or a
+launch. So each one is tested against the shape of the data that produced that
+wrong number, not against a synthetic edge case.
+
+The checks also have to stay quiet on good data. A check that fails on a
+legitimate result gets switched off, and then it protects nothing, so the
+passing cases are tested as carefully as the failing ones.
+"""
+
+from __future__ import annotations
+
+import math
+
+import pytest
+
+from legal_eval.preflight import (
+    CHECKS,
+    ceilings,
+    chance_levels,
+    check_lid_calibration_recorded,
+    check_metric_directions,
+    check_no_zero_standard_error,
+    check_population_recorded,
+    check_saturation_declared,
+    check_srd_idr_matches_linkability,
+    failed,
+    run_preflight,
+    unmarked_claims,
+)
+
+
+def report(rows, system="B5 ASR-BN", **extra):
+    """A report with one system and the given per-N rows."""
+    out = {"systems": {system: {"by_n": rows}}}
+    out.update(extra)
+    return out
+
+
+# Chance levels and ceilings, which the rest is measured against.
+
+def test_chance_levels_are_the_published_baselines():
+    levels = chance_levels(29)
+    # An attacker whose predicate carries no information still isolates
+    # exactly one of N this often, which is why the baseline is not zero.
+    assert levels["singling_out"] == pytest.approx(math.exp(-1))
+    assert levels["linkability"] == pytest.approx(1 / 29)
+    assert levels["srd_idr"] == pytest.approx(1 / 29)
+    # The bit metrics are disclosure above chance, so chance is zero bits.
+    assert levels["srd_mean"] == 0.0
+    assert levels["lid_mean"] == 0.0
+
+
+def test_chance_level_refuses_a_population_below_two():
+    with pytest.raises(ValueError, match="at least 2"):
+        chance_levels(1)
+
+
+def test_ceilings_are_one_and_log2_n():
+    bounds = ceilings(29)
+    assert bounds["linkability"] == 1.0
+    assert bounds["lid_mean"] == pytest.approx(math.log2(29))
+    assert bounds["srd_max"] == pytest.approx(math.log2(29))
+
+
+# The population must be recorded. CNIL G2.
+
+def test_a_row_without_n_fails():
+    result = check_population_recorded(report([{"linkability": 0.5}]))
+    assert result.status == "fail"
+    assert "no integer n" in result.detail
+
+
+def test_rows_with_n_pass():
+    result = check_population_recorded(report([{"n": 29, "linkability": 0.5}]))
+    assert result.status == "pass"
+
+
+def test_an_empty_report_is_skipped_not_passed():
+    """Nothing to check is not the same as nothing wrong."""
+    assert check_population_recorded({}).status == "skip"
+
+
+# The standard error collapse. The costliest failure in the project.
+
+def test_a_standard_error_of_exactly_zero_fails():
+    """At N equal to the enrollment count the closed-set draw is deterministic.
+
+    Every standard error came out exactly 0.0000, which read as precision and
+    produced a false claim that one metric resolved systems the others could
+    not, plus a false inversion against the EER.
+    """
+    result = check_no_zero_standard_error(
+        report([{"n": 29, "linkability": 1.0, "linkability_sem": 0.0}])
+    )
+    assert result.status == "fail"
+    assert "exactly zero" in result.detail
+    assert "Resample trials" in result.detail
+
+
+def test_non_zero_standard_errors_pass():
+    result = check_no_zero_standard_error(
+        report([{"n": 29, "linkability": 0.9, "linkability_sem": 0.012}])
+    )
+    assert result.status == "pass"
+
+
+def test_a_report_with_no_standard_errors_is_skipped():
+    result = check_no_zero_standard_error(report([{"n": 29, "linkability": 0.9}]))
+    assert result.status == "skip"
+
+
+def test_a_tiny_standard_error_is_not_flagged():
+    """Only exactly zero is the bug; small is just a precise estimate."""
+    result = check_no_zero_standard_error(
+        report([{"n": 29, "linkability_sem": 1e-12}])
+    )
+    assert result.status == "pass"
+
+
+# Saturation. Four of six published conditions sat against the bound.
+
+def test_a_value_at_its_ceiling_without_a_saturation_section_fails():
+    result = check_saturation_declared(
+        report([{"n": 29, "linkability": 1.0}])
+    )
+    assert result.status == "fail"
+    assert "bound" in result.detail
+
+
+def test_a_value_at_its_ceiling_with_a_saturation_section_passes():
+    result = check_saturation_declared(
+        report([{"n": 29, "linkability": 1.0}], saturation=[{"condition": "x"}])
+    )
+    assert result.status == "pass"
+
+
+def test_values_below_the_ceiling_pass():
+    result = check_saturation_declared(
+        report([{"n": 29, "linkability": 0.386, "lid_mean": 1.561}])
+    )
+    assert result.status == "pass"
+
+
+def test_a_bit_metric_at_log2_n_is_detected():
+    """LID collapses to exactly log2(N) when the calibration is separable."""
+    result = check_saturation_declared(
+        report([{"n": 29, "lid_mean": math.log2(29)}])
+    )
+    assert result.status == "fail"
+
+
+# SRD's IdR is the Linkability metric, not a second opinion on it.
+
+def test_identical_idr_and_linkability_pass():
+    result = check_srd_idr_matches_linkability(
+        report([{"n": 29, "srd_idr": 0.386, "linkability": 0.386}])
+    )
+    assert result.status == "pass"
+
+
+@pytest.mark.parametrize("idr,link,why", [
+    (0.7933, 0.8278, "0.0345, the worst seen on real embeddings at small N"),
+    (0.2667, 0.3280, "0.0613, the worst in the synthetic demo at n=5"),
+])
+def test_sampling_noise_warns_rather_than_fails(idr, link, why):
+    """Both are rank-1 statistics over independent draws.
+
+    At small N they separate even when both are right. An earlier threshold of
+    0.05 failed on the project's own demo output, which is how a check becomes
+    one that people switch off.
+    """
+    result = check_srd_idr_matches_linkability(
+        report([{"n": 5, "srd_idr": idr, "linkability": link}])
+    )
+    assert result.status == "warn", why
+    assert "independent" in result.detail
+
+
+def test_a_large_divergence_fails():
+    result = check_srd_idr_matches_linkability(
+        report([{"n": 29, "srd_idr": 0.90, "linkability": 0.40}])
+    )
+    assert result.status == "fail"
+    assert "implementations is wrong" in result.detail
+    assert "too large to be sampling noise" in result.detail
+
+
+def test_missing_one_of_the_two_is_skipped():
+    result = check_srd_idr_matches_linkability(
+        report([{"n": 29, "linkability": 0.4}])
+    )
+    assert result.status == "skip"
+
+
+# LID without its calibration is not a property of the system.
+
+def test_lid_without_fitted_slopes_fails():
+    result = check_lid_calibration_recorded(report([{"n": 29, "lid_mean": 1.561}]))
+    assert result.status == "fail"
+    assert "unrecorded" in result.detail
+
+
+def test_lid_with_fitted_slopes_passes():
+    result = check_lid_calibration_recorded(
+        report([{"n": 29, "lid_mean": 1.561}], fitted_slopes={"B5 ASR-BN": 2.1})
+    )
+    assert result.status == "pass"
+
+
+def test_a_separable_calibration_warns():
+    """Unregularised logistic on separable scores has no finite MLE.
+
+    The slope diverges, a value of 199.4 was observed, and LID then equals
+    log2(N) exactly whatever the system does.
+    """
+    result = check_lid_calibration_recorded(
+        report([{"n": 29, "lid_mean": 4.858}],
+               fitted_slopes={"original": 199.4}, separable={"original": True})
+    )
+    assert result.status == "warn"
+    assert "no finite maximum likelihood" in result.detail
+
+
+def test_no_lid_values_is_skipped():
+    result = check_lid_calibration_recorded(report([{"n": 29, "linkability": 0.4}]))
+    assert result.status == "skip"
+
+
+# Direction with N, which is how a coarsening gets misread as an inversion.
+
+def test_expected_directions_pass():
+    result = check_metric_directions(report([
+        {"n": 2, "linkability": 0.93, "srd_mean": 0.57, "lid_mean": 0.45},
+        {"n": 29, "linkability": 0.39, "srd_mean": 2.10, "lid_mean": 1.56},
+    ]))
+    assert result.status == "pass"
+
+
+def test_a_rank_metric_rising_with_n_warns():
+    result = check_metric_directions(report([
+        {"n": 2, "linkability": 0.40},
+        {"n": 29, "linkability": 0.95},
+    ]))
+    assert result.status == "warn"
+    assert "against the expected direction" in result.detail
+
+
+def test_a_bit_metric_falling_with_n_warns():
+    result = check_metric_directions(report([
+        {"n": 2, "lid_mean": 3.0},
+        {"n": 29, "lid_mean": 1.0},
+    ]))
+    assert result.status == "warn"
+
+
+def test_a_single_population_cannot_show_a_trend():
+    result = check_metric_directions(report([{"n": 29, "linkability": 1.0}]))
+    assert result.status == "skip"
+
+
+# The suite as a whole.
+
+def test_run_preflight_returns_one_result_per_check():
+    results = run_preflight(report([{"n": 29, "linkability": 0.4}]))
+    assert len(results) == len(CHECKS)
+    assert [r.name for r in results] == [
+        "population_recorded", "no_zero_standard_error", "saturation_declared",
+        "srd_idr_matches_linkability", "lid_calibration_recorded",
+        "metric_directions",
+    ]
+
+
+def test_failed_selects_only_failures():
+    results = run_preflight(report([
+        {"n": 29, "linkability": 1.0, "linkability_sem": 0.0}
+    ]))
+    names = {r.name for r in failed(results)}
+    assert "no_zero_standard_error" in names
+    assert "saturation_declared" in names
+    assert all(r.status == "fail" for r in failed(results))
+
+
+def test_a_clean_report_fails_nothing():
+    results = run_preflight(report(
+        [
+            {"n": 2, "linkability": 0.93, "linkability_sem": 0.01,
+             "srd_idr": 0.93, "srd_mean": 0.57, "lid_mean": 0.45},
+            {"n": 29, "linkability": 0.39, "linkability_sem": 0.02,
+             "srd_idr": 0.39, "srd_mean": 2.10, "lid_mean": 1.56},
+        ],
+        fitted_slopes={"B5 ASR-BN": 2.1},
+        separable={"B5 ASR-BN": False},
+    ))
+    assert failed(results) == []
+
+
+def test_a_list_of_systems_is_handled_as_well_as_a_mapping():
+    """An older report wrote systems as a list; it must still be checkable."""
+    results = run_preflight({"systems": [{"by_n": [{"linkability": 0.4}]}]})
+    assert any(r.name == "population_recorded" and r.status == "fail"
+               for r in results)
+
+
+def test_every_check_carries_the_hazard_it_guards():
+    """A failure nobody understands gets waived, so the reason travels with it."""
+    for result in run_preflight(report([{"n": 29, "linkability": 1.0}])):
+        assert result.hazard, result.name
+        # Long enough to say what goes wrong, not just name a rule.
+        assert len(result.hazard.split()) >= 5, result.hazard
+
+
+def test_result_str_is_readable():
+    result = check_population_recorded(report([{"n": 29}]))
+    assert str(result).startswith("[PASS]")
+
+
+# Evidence markers, the constitution's rule.
+
+def test_an_unmarked_measured_claim_is_found():
+    text = "The verifier gives an EER of 0.0867 on this population."
+    assert unmarked_claims(text) == [
+        (1, "The verifier gives an EER of 0.0867 on this population.")
+    ]
+
+
+def test_a_marked_claim_is_not_flagged():
+    text = "The verifier gives an EER of 0.0867 on this population **[M]**."
+    assert unmarked_claims(text) == []
+
+
+def test_prose_without_a_number_is_not_a_candidate():
+    assert unmarked_claims("This section explains where identity survives.") == []
+
+
+def test_code_blocks_and_tables_are_skipped():
+    text = (
+        "```\n"
+        "linkability reaches 1.0\n"
+        "```\n"
+        "| metric | gives 0.5 |\n"
+        "> quoted: yields 0.3\n"
+        "# heading reaches 10\n"
+    )
+    assert unmarked_claims(text) == []
+
+
+def test_each_marker_kind_counts_as_marked():
+    for marker in ("[M]", "[P]", "[I]", "[?]"):
+        assert unmarked_claims(f"it yields 0.5 {marker}") == []
