@@ -31,6 +31,13 @@ upstream steps performed with external toolkits; see ``docs/reproduction.md``.
 """
 
 from legal_eval.__about__ import __version__
+from legal_eval.audio_integrity import (
+    AudioIntegrity,
+    active_fraction,
+    check_anonymized,
+    clipped_fraction,
+    optimistic_bias_note,
+)
 from legal_eval.comparison import (
     DisclosureResult,
     calibration_samples,
@@ -94,6 +101,11 @@ from legal_eval.vpc import (
 )
 
 __all__ = [
+    "AudioIntegrity",
+    "active_fraction",
+    "check_anonymized",
+    "clipped_fraction",
+    "optimistic_bias_note",
     "CheckResult",
     "ceilings",
     "chance_levels",

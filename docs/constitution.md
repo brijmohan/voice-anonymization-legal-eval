@@ -280,6 +280,59 @@ embedding dimensions. Each of those changes the population, and every metric's
 chance level is a function of the population, so a short merge does not look
 like an error either.
 
+### 3.9 A destroyed utterance looks exactly like perfect privacy
+
+Running the 2026 McAdams baseline over Common Voice 27 produced, for
+`common_voice_en_25475281`, a file of the correct length that is not speech
+**[M]**:
+
+| | samples | rms | audible samples |
+|---|---|---|---|
+| original | 96768 | 0.0376 | 93487 |
+| anonymized | 96768 | 0.0096 | 67 |
+
+The output is 99.93% exact zeros with 67 near-full-scale impulses. The attacker
+raised on it, which stopped a shard after 18063 utterances and is how we found
+out.
+
+**The crash is the fortunate outcome.** Consider the ordinary one. A more
+forgiving extractor embeds six seconds of near-silence, that embedding sits at
+chance distance from every enrolled speaker, and the utterance is counted as a
+privacy success. Chance is the best privacy score attainable, so **a system
+that destroys an utterance is rewarded for it**, by exactly as much as a system
+that anonymized it perfectly.
+
+This has three consequences, in increasing order of importance.
+
+First, our own CV27 numbers need the exclusion declared. One utterance in
+195580 is immaterial to any estimate, but the principle is not about this
+magnitude.
+
+Second, it bounds what a privacy figure means. A reported privacy level is an
+upper bound on what the system achieves on audio it processes correctly, and
+the gap is unmeasured unless somebody looks.
+
+Third, and this is the part worth publishing: **no evaluation in this field
+checks it.** The VoicePrivacy protocol scores whatever the anonymization stage
+emits. A baseline that fails on a fraction of real crowdsourced audio, as
+distinct from read audiobook speech, would be scored as more private for doing
+so, and the leaderboard would not show it. Nobody is cheating; the protocol
+simply cannot tell the two apart. That is a defect in the measurement, which
+is this project's subject.
+
+`legal_eval/audio_integrity.py` implements the check, with thresholds set
+loosely enough that heavy but legitimate processing passes: a system is allowed
+to sound bad and several good ones do. `preflight`'s `exclusions_declared`
+requires a report to answer the question one way or the other, because silence
+on it is the only answer that cannot be audited.
+
+We must not fix the attacker's crash. VPC's model calls `layer(x,
+lengths=lengths)`, the installed speechbrain's `TDNNBlock` does not accept
+`lengths`, and a fallback path then fails on a one-frame feature tensor.
+Repairing that would change what the attacker computes for every utterance and
+would move every number already reported. The utterance is skipped and written
+down instead.
+
 ---
 
 ## 4. Where identity actually leaks

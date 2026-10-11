@@ -408,9 +408,65 @@ def check_metric_directions(report: dict[str, Any]) -> CheckResult:
                        hazard)
 
 
+def check_exclusions_declared(report: dict[str, Any]) -> CheckResult:
+    """Utterances the attacker could not score must be declared.
+
+    A destroyed utterance scores at chance, and chance is the best attainable
+    privacy score, so dropping one quietly makes the system look better. The
+    McAdams baseline on Common Voice emitted a file of the right length that
+    was 99.93% digital silence; the attacker raised on it, which is the visible
+    outcome. A more forgiving extractor would have embedded the silence and
+    counted it as a privacy success.
+
+    So a report either states that nothing was excluded or says how many were
+    and why. Silence on the question is the one answer that cannot be checked.
+    """
+    hazard = ("a destroyed utterance scores at chance, so excluding one "
+              "quietly flatters the system")
+    if "excluded" not in report:
+        return CheckResult(
+            "exclusions_declared", "fail",
+            "the report does not say whether any utterance was excluded. State "
+            "excluded: 0 when none were, so the question has an answer.",
+            hazard,
+        )
+    excluded = report["excluded"]
+    if isinstance(excluded, int):
+        count, detail = excluded, None
+    elif isinstance(excluded, dict):
+        count = excluded.get("count")
+        detail = excluded.get("reason") or excluded.get("ids")
+    elif isinstance(excluded, list):
+        count, detail = len(excluded), excluded
+    else:
+        return CheckResult("exclusions_declared", "fail",
+                           f"excluded should be a count, a list or an object, "
+                           f"got {type(excluded).__name__}", hazard)
+    if not isinstance(count, int) or count < 0:
+        return CheckResult("exclusions_declared", "fail",
+                           f"excluded count is not a non-negative integer: "
+                           f"{count!r}", hazard)
+    if count == 0:
+        return CheckResult("exclusions_declared", "pass",
+                           "the report states that nothing was excluded", hazard)
+    if not detail:
+        return CheckResult(
+            "exclusions_declared", "fail",
+            f"{count} utterance(s) were excluded with no reason or ids "
+            f"recorded, so the exclusion cannot be audited", hazard,
+        )
+    return CheckResult(
+        "exclusions_declared", "warn",
+        f"{count} utterance(s) were excluded and recorded. The reported "
+        f"privacy is an upper bound on what the system achieves on audio it "
+        f"processes correctly.", hazard,
+    )
+
+
 #: Every check, in the order they are reported.
 CHECKS = (
     check_population_recorded,
+    check_exclusions_declared,
     check_no_zero_standard_error,
     check_saturation_declared,
     check_srd_idr_matches_linkability,

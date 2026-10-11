@@ -19,6 +19,7 @@ from legal_eval.preflight import (
     CHECKS,
     ceilings,
     chance_levels,
+    check_exclusions_declared,
     check_lid_calibration_recorded,
     check_metric_directions,
     check_no_zero_standard_error,
@@ -292,9 +293,9 @@ def test_run_preflight_returns_one_result_per_check():
     results = run_preflight(report([{"n": 29, "linkability": 0.4}]))
     assert len(results) == len(CHECKS)
     assert [r.name for r in results] == [
-        "population_recorded", "no_zero_standard_error", "saturation_declared",
-        "srd_idr_matches_linkability", "lid_calibration_recorded",
-        "metric_directions",
+        "population_recorded", "exclusions_declared", "no_zero_standard_error",
+        "saturation_declared", "srd_idr_matches_linkability",
+        "lid_calibration_recorded", "metric_directions",
     ]
 
 
@@ -318,6 +319,7 @@ def test_a_clean_report_fails_nothing():
         ],
         fitted_slopes={"B5 ASR-BN": 2.1},
         separable={"B5 ASR-BN": False},
+        excluded=0,
     ))
     assert failed(results) == []
 
@@ -375,3 +377,52 @@ def test_code_blocks_and_tables_are_skipped():
 def test_each_marker_kind_counts_as_marked():
     for marker in ("[M]", "[P]", "[I]", "[?]"):
         assert unmarked_claims(f"it yields 0.5 {marker}") == []
+
+
+# Excluded utterances. A destroyed one scores at chance, which is the best
+# attainable privacy score, so dropping it quietly flatters the system.
+
+def test_a_report_silent_on_exclusions_fails():
+    """Silence is the one answer that cannot be checked."""
+    result = check_exclusions_declared(report([{"n": 29}]))
+    assert result.status == "fail"
+    assert "excluded: 0" in result.detail
+
+
+def test_declaring_zero_exclusions_passes():
+    result = check_exclusions_declared(report([{"n": 29}], excluded=0))
+    assert result.status == "pass"
+
+
+def test_exclusions_with_ids_warn_and_state_the_direction():
+    result = check_exclusions_declared(
+        report([{"n": 29}], excluded={"count": 1,
+                                      "ids": ["common_voice_en_25475281"]})
+    )
+    assert result.status == "warn"
+    assert "upper bound" in result.detail
+
+
+def test_exclusions_without_a_reason_cannot_be_audited():
+    result = check_exclusions_declared(report([{"n": 29}], excluded={"count": 3}))
+    assert result.status == "fail"
+    assert "cannot be audited" in result.detail
+
+
+def test_a_list_of_excluded_ids_is_accepted():
+    result = check_exclusions_declared(
+        report([{"n": 29}], excluded=["common_voice_en_25475281"])
+    )
+    assert result.status == "warn"
+    assert "1 utterance" in result.detail
+
+
+def test_a_bare_non_zero_count_cannot_be_audited():
+    result = check_exclusions_declared(report([{"n": 29}], excluded=7))
+    assert result.status == "fail"
+
+
+def test_a_nonsense_excluded_field_fails():
+    result = check_exclusions_declared(report([{"n": 29}], excluded="some"))
+    assert result.status == "fail"
+    assert "got str" in result.detail
