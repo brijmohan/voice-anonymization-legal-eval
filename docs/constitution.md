@@ -219,6 +219,39 @@ within 2e-07 **[M]**. So a score matrix is an inner-product representation of
 the embeddings, not a summary of them. "Similarities are safer than vectors" is
 false at this shape **[I]**.
 
+### 3.7 The attacker we measure preprocesses one utterance two ways
+
+The 2026 challenge's ignorant attacker is `ecapa_ssl`: an ECAPA head over two
+feature streams, a filterbank and WavLM-Large. Reading its extractor to drive
+it over Common Voice turned up something about how it is fed **[M]**.
+
+The filterbank stream is computed from the signal the caller decoded and passed
+through `normalize_wave`, which loudness-normalises it. The WavLM stream is not.
+`extract_vector` receives that same decoded audio and ignores it, calling
+`extract_features([wav_path])`, which re-opens the file from disk and applies
+its own layer norm. So the two streams that the ECAPA head combines see
+differently preprocessed versions of one utterance, and every clip is decoded
+twice.
+
+Two consequences, and they pull in opposite directions.
+
+It does not bias the comparison. The same attacker is applied to every
+condition, so a difference between systems is still a difference between
+systems. This is not a reason to discount any number already reported.
+
+It is a caution for Common Voice specifically **[?]**. Loudness normalisation
+is doing real work on one stream and none on the other, and Common Voice clips
+are far more varied in level and channel than LibriSpeech read speech. If the
+CV27 numbers come out oddly, this asymmetry is the first thing to check, and
+the check is cheap: extract once more with the WavLM stream fed the normalised
+audio and see whether the ranking moves.
+
+What we must not do is quietly fix it. Changing which audio reaches which
+stream changes every embedding, so the libri numbers already reported would no
+longer be comparable to anything computed afterwards. If it is worth changing
+it is worth re-running everything and saying so, which is the rule in
+[`../CLAUDE.md`](../CLAUDE.md) about anything that moves a computed value.
+
 ---
 
 ## 4. Where identity actually leaks
