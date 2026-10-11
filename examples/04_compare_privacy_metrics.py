@@ -697,6 +697,32 @@ def main() -> int:
         else {}
     )
 
+    excluded: dict[str, object] = {"count": 0}
+    if args.results_dir:
+        from legal_eval.vpc import excluded_utterances
+
+        per_dataset = excluded_utterances(args.results_dir)
+        total = sum(len(v) for v in per_dataset.values())
+        if total:
+            from legal_eval.audio_integrity import optimistic_bias_note
+
+            attempted = sum(
+                len(s.matrix.test_ids) if hasattr(s.matrix, "test_ids") else 0
+                for s in built
+            ) or total
+            excluded = {
+                "count": total,
+                "ids": per_dataset,
+                "reason": optimistic_bias_note(total, attempted + total),
+            }
+            print(f"\nWARNING: {total} utterance(s) were excluded by the "
+                  f"extraction because the attacker could not score them.")
+            for dataset, ids in per_dataset.items():
+                print(f"  {dataset}: {len(ids)}, e.g. {ids[0]}")
+            print("  A destroyed utterance scores at chance, which is the best "
+                  "privacy score attainable, so the reported privacy is an "
+                  "upper bound.")
+
     if args.output:
         args.output.write_text(
             json.dumps(
@@ -708,6 +734,11 @@ def main() -> int:
                     "cross_calibration": cross,
                     "fitted_slopes": {k: v[0] for k, v in slopes.items()},
                     "separable": {k: v[1] for k, v in slopes.items()},
+                    # Declared one way or the other, always. A destroyed
+                    # utterance scores at chance, which is the best privacy
+                    # score there is, so a silent exclusion flatters the
+                    # system. preflight refuses a report that omits this.
+                    "excluded": excluded,
                 },
                 indent=2,
                 default=float,

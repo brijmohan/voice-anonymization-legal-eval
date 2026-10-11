@@ -340,3 +340,54 @@ def test_unpaired_datasets_computes_pairs_when_not_given(tmp_path):
         (level / "speaker_vectors.pt").write_bytes(b"")
 
     assert unpaired_datasets(find_embedding_dirs(root)) == ["cv27_A_enroll"]
+
+
+def test_excluded_utterances_collects_what_an_extraction_recorded(tmp_path):
+    """An unscoreable utterance has to be declarable, not just skipped.
+
+    A destroyed utterance scores at chance, and chance is the best privacy
+    score attainable, so dropping one quietly makes the system look better.
+    """
+    from legal_eval.vpc import excluded_utterances
+
+    root = tmp_path / "emb_xvect"
+    root.mkdir(parents=True)
+    (root / "cv27_trials_mixed_mcadams.excluded.tsv").write_text(
+        "common_voice_en_25475281\tRuntimeError\tPadding size should be less\n",
+        encoding="utf-8",
+    )
+    assert excluded_utterances(root) == {
+        "cv27_trials_mixed_mcadams": ["common_voice_en_25475281"]
+    }
+
+
+def test_excluded_utterances_is_empty_when_nothing_was_excluded(tmp_path):
+    from legal_eval.vpc import excluded_utterances
+
+    root = tmp_path / "emb_xvect"
+    root.mkdir(parents=True)
+    assert excluded_utterances(root) == {}
+
+
+def test_excluded_utterances_accepts_a_parent_directory(tmp_path):
+    from legal_eval.vpc import excluded_utterances
+
+    root = tmp_path / "cosine_out" / "emb_xvect"
+    root.mkdir(parents=True)
+    (root / "d.excluded.tsv").write_text("u1\tRuntimeError\tx\n", encoding="utf-8")
+    assert excluded_utterances(tmp_path / "cosine_out") == {"d": ["u1"]}
+
+
+def test_excluded_utterances_ignores_blank_lines(tmp_path):
+    from legal_eval.vpc import excluded_utterances
+
+    root = tmp_path / "emb_xvect"
+    root.mkdir(parents=True)
+    (root / "d.excluded.tsv").write_text("u1\tE\tx\n\nu2\tE\ty\n", encoding="utf-8")
+    assert excluded_utterances(root) == {"d": ["u1", "u2"]}
+
+
+def test_excluded_utterances_on_a_missing_directory_is_empty(tmp_path):
+    from legal_eval.vpc import excluded_utterances
+
+    assert excluded_utterances(tmp_path / "absent") == {}

@@ -418,6 +418,51 @@ def unpaired_datasets(
     return sorted(name for name in discovered if name not in used)
 
 
+def excluded_utterances(results_dir: str | Path) -> dict[str, list[str]]:
+    """Utterances an extraction recorded as unscoreable, per dataset.
+
+    An extraction that meets audio it cannot process has two options, and both
+    are worse than they look. Aborting loses the run. Skipping quietly shrinks
+    the population, and since a destroyed utterance scores at chance, which is
+    the best attainable privacy score, dropping it makes the system look
+    better. So the extraction writes the ids beside the embeddings, as
+    ``<dataset>.excluded.tsv``, and this collects them so a report can declare
+    them.
+
+    See :mod:`legal_eval.audio_integrity` for why an unscoreable utterance is
+    usually a destroyed one rather than a hard one.
+
+    Args:
+        results_dir: Either the ``emb_xvect`` directory or a parent holding it.
+
+    Returns:
+        Dataset name to the list of excluded utterance ids, for datasets that
+        excluded something. Empty when nothing was excluded anywhere.
+    """
+    root = Path(results_dir)
+    if root.name != "emb_xvect":
+        candidate = root / "emb_xvect"
+        if candidate.is_dir():
+            root = candidate
+        else:
+            found = next(root.rglob("emb_xvect"), None) if root.is_dir() else None
+            if found is not None:
+                root = found
+    if not root.is_dir():
+        return {}
+
+    out: dict[str, list[str]] = {}
+    for path in sorted(root.glob("*.excluded.tsv")):
+        dataset = path.name[: -len(".excluded.tsv")]
+        ids = []
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                ids.append(line.split("\t")[0])
+        if ids:
+            out[dataset] = ids
+    return out
+
+
 def benchmark_vpc_run(
     results_dir: str | Path,
     distractor_dataset: str | None = None,
