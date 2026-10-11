@@ -196,6 +196,33 @@ concurrent shard workers each ran that install and clobbered `env_sttts.sh`.
 **The habit.** `export NEW_INSTALL_TRIGGER=no` once installed, and warm up with
 a single worker before launching many.
 
+### One worker and many workers are different code paths
+
+**What happened.** CV27 embedding extraction was smoke-tested twice at one
+process, on both the original and the anonymized audio. Both passed. The first
+real launch at six processes died on the first batch:
+
+```
+RuntimeError: Cowardly refusing to serialize non-leaf tensor which
+requires_grad, since autograd does not support crossing process boundaries.
+```
+
+`tqdm.contrib.concurrent.process_map` pickles each worker's return value back
+to the parent. The single-process branch calls the worker function directly and
+pickles nothing, so the entire serialisation path, which is where the bug was,
+had never run. The fix was `detach().cpu()` on the embedding, which changes no
+value.
+
+This is the second time a parallel launch failed for a reason a single worker
+could not have surfaced. The first was `recognition_job` deriving its output
+suffix from a `job_id` of `None`, where one worker wrote the canonical file and
+eight would have overwritten each other.
+
+**The habit.** Smoke test at the worker count you will actually run, on a slice
+small enough to be cheap. "Warm up with one worker" is still right for catching
+a bad path or a missing model, but it is not evidence that the parallel run
+works, and twice it was mistaken for exactly that.
+
 ### A per-job suffix derived from `None`
 
 **What happened.** `recognition_job` computes
@@ -211,7 +238,9 @@ it. The outer save was patched first and would not have been enough.
 
 ## Before launching anything long
 
-1. Warm up with **one** worker and read its first log lines.
+1. Warm up with **one** worker and read its first log lines, then warm up
+   again **at the worker count you will run**. One worker does not exercise
+   the parallel path, and twice it was taken as proof that it did.
 2. Confirm the output lands where the design says, by name.
 3. Check a pid file, never `pgrep -f`, for "is it already running".
 4. Make sure a restart resumes rather than restarts, and prove it.
