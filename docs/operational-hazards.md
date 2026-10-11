@@ -196,6 +196,31 @@ concurrent shard workers each ran that install and clobbered `env_sttts.sh`.
 **The habit.** `export NEW_INSTALL_TRIGGER=no` once installed, and warm up with
 a single worker before launching many.
 
+### `nvidia-smi` reports no GPU when only `PATH` is set
+
+**What happened.** On this workstation image the driver lives outside the
+default paths. Setting `PATH=/var/lib/nvidia/bin:$PATH` makes the binary
+findable, and it then fails on its own library:
+
+```
+NVIDIA-SMI couldn't find libnvidia-ml.so library in your system.
+```
+
+Earlier in the same project a `find -maxdepth 4` missed the binary altogether
+and produced the claim that the GPU tooling was absent, which Brij corrected by
+pasting his own `nvidia-smi` output. The second time it read as `GPU n/a` in a
+status check and was nearly reported as an idle GPU.
+
+**The habit.** Export both, which is what `env.sh` already does:
+
+```sh
+export PATH=/var/lib/nvidia/bin:$PATH
+export LD_LIBRARY_PATH=/var/lib/nvidia/lib64:$LD_LIBRARY_PATH
+```
+
+A GPU reading that says "not found" is a broken command until proven
+otherwise. Never report it as an idle or absent GPU.
+
 ### One worker and many workers are different code paths
 
 **What happened.** CV27 embedding extraction was smoke-tested twice at one
