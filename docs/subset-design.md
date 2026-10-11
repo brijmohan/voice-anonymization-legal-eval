@@ -224,5 +224,6 @@ Two things are added:
    target information overestimates privacy. Our subsets do not currently
    support that measurement, because they define no target pool.
 2. **Ship a datasheet with the subsets.** Following arXiv:2305.04672.
+   Written: [`cv27-datasheet.md`](cv27-datasheet.md).
 
 Both are now in [`research-ideas.md`](research-ideas.md).
