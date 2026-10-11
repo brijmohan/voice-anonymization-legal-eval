@@ -252,6 +252,34 @@ longer be comparable to anything computed afterwards. If it is worth changing
 it is worth re-running everything and saying so, which is the rule in
 [`../CLAUDE.md`](../CLAUDE.md) about anything that moves a computed value.
 
+### 3.8 The CV27 embeddings are not an artefact of how the work was divided
+
+Common Voice is large enough that extracting its embeddings had to be
+parallelised, and the challenge extractor's own parallel path does not run for
+this attacker: it pickles each worker's result and torch refuses a non-leaf
+tensor that requires grad. So extraction was sharded at the process level
+instead, by crc32 of the utterance id, with each shard its own single-process
+job and the results merged.
+
+That is a change to how a published number is produced, so it was checked
+rather than assumed. The same 1200 utterances were extracted twice, once in a
+single pass and once as six shards merged back together. The embeddings are
+**bit-identical: worst absolute difference 0.000e+00 across all 1200, and zero
+speaker label mismatches** **[M]**. The check was repeated after limiting torch
+to two threads per shard, which doubled throughput, with the same result
+**[M]**.
+
+This matters because the alternative is invisible. If sharding perturbed the
+embeddings, every CV27 metric would shift by an unknown amount and nothing in
+the output would indicate it. The numbers would simply be wrong, and wrong in a
+way that looks like a finding about Common Voice.
+
+The merge refuses rather than guesses, for the same reason: an identifier in
+two shards, a total below what was expected, an incomplete shard, two
+embedding dimensions. Each of those changes the population, and every metric's
+chance level is a function of the population, so a short merge does not look
+like an error either.
+
 ---
 
 ## 4. Where identity actually leaks
