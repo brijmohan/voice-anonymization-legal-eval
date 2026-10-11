@@ -11,6 +11,11 @@ The two metrics translate the "singling out" and "linkability" criteria of the
 Article 29 Working Party's Opinion 05/2014 on Anonymization Techniques into
 quantities that can be measured on speech data.
 
+Opinion 05/2014 sets *three* criteria. The third, **inference**, is not
+implemented here and nothing in this package measures it. Data can pass both
+metrics below and still fail the inference test, in which case it is not
+anonymous. Treat the output as evidence on two of three criteria.
+
 These metrics were the vehicle of a compliance demonstration that the CNIL's
 Technological Expertise Department reviewed in August 2024, finding no obstacle
 to the Voice Harbor solution demonstrating compliance with the three Opinion

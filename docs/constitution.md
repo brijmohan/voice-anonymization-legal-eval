@@ -168,7 +168,26 @@ short sentences from a shared pool, so per-speaker vocabulary should be far less
 distinctive **[?]**. That is testable with their method, and if it holds it
 justifies the CV27 subsets on firmer ground than population size.
 
-### 3.4 Released artifacts are more revealing than they look
+### 3.5 We implement two of the three criteria, and had not said so
+
+Opinion 05/2014 sets three tests: singling out, linkability and **inference**.
+This project implements the first two and has never implemented the third
+**[M]**, by inspection of its own code. The CNIL letter concerns all three, so
+the demonstration it reviewed rests on inference being handled somewhere, and
+nothing here handles it.
+
+This is a larger gap than any of G1 to G4 and it sat unstated while the
+repository was named for the criteria. It was found by a venue scan, not by
+reading our own scope.
+
+Membership inference is the natural operationalisation, and Tsaprazlis et al.,
+"VoxGuard: Evaluating User and Attribute Privacy in Speech via Membership
+Inference", ICASSP 2026, is the first paper to bring it to speech anonymization
+**[P]**. Whether their formulation satisfies the Opinion's inference criterion
+is **[?]** and is precisely the kind of claim the validation ledger exists to
+settle before we build on it.
+
+### 3.6 Released artifacts are more revealing than they look
 
 The released score matrices are **exactly rank 256**, the x-vector dimension:
 the singular spectrum collapses by four orders of magnitude immediately after
