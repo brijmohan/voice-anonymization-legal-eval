@@ -84,7 +84,7 @@ def test_an_empty_report_is_skipped_not_passed():
 
 # The standard error collapse. The costliest failure in the project.
 
-def test_a_standard_error_of_exactly_zero_fails():
+def test_a_zero_standard_error_away_from_the_bound_fails():
     """At N equal to the enrollment count the closed-set draw is deterministic.
 
     Every standard error came out exactly 0.0000, which read as precision and
@@ -92,11 +92,37 @@ def test_a_standard_error_of_exactly_zero_fails():
     not, plus a false inversion against the EER.
     """
     result = check_no_zero_standard_error(
-        report([{"n": 29, "linkability": 1.0, "linkability_sem": 0.0}])
+        report([{"n": 29, "linkability": 0.386, "linkability_sem": 0.0}])
     )
     assert result.status == "fail"
-    assert "exactly zero" in result.detail
+    assert "away from the metric's bound" in result.detail
     assert "Resample trials" in result.detail
+
+
+def test_a_zero_standard_error_at_the_bound_warns_instead():
+    """A metric pinned at its ceiling in every replicate has no variance.
+
+    Linkability for original libri_test is exactly 1.000 at every N, so its
+    standard error is legitimately zero. Running this check over the project's
+    own committed results surfaced both kinds at once, and calling this a
+    resampling fault would send somebody to repair code that works.
+    """
+    result = check_no_zero_standard_error(
+        report([{"n": 29, "linkability": 1.0, "linkability_sem": 0.0}])
+    )
+    assert result.status == "warn"
+    assert "pinned at its bound" in result.detail
+    assert "saturation_declared" in result.detail
+
+
+def test_a_real_zero_outranks_a_saturated_one():
+    """One genuine resampling fault must not be hidden by saturated rows."""
+    result = check_no_zero_standard_error(report([
+        {"n": 29, "linkability": 1.0, "linkability_sem": 0.0},
+        {"n": 29, "srd_mean": 2.1, "srd_mean_sem": 0.0},
+    ]))
+    assert result.status == "fail"
+    assert "srd_mean_sem" in result.detail
 
 
 def test_non_zero_standard_errors_pass():
@@ -274,7 +300,7 @@ def test_run_preflight_returns_one_result_per_check():
 
 def test_failed_selects_only_failures():
     results = run_preflight(report([
-        {"n": 29, "linkability": 1.0, "linkability_sem": 0.0}
+        {"n": 29, "linkability": 1.0, "srd_mean": 2.1, "srd_mean_sem": 0.0}
     ]))
     names = {r.name for r in failed(results)}
     assert "no_zero_standard_error" in names

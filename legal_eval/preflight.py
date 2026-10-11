@@ -165,31 +165,63 @@ def check_no_zero_standard_error(report: dict[str, Any]) -> CheckResult:
     measurement, and produced a published-shaped claim that one metric resolved
     systems the others could not, plus an inversion against the EER. Both
     reversed once trials were resampled too.
+
+    There is a second, innocent way to get a zero. A metric pinned at its
+    ceiling in every replicate has no variance to estimate, so its standard
+    error is legitimately zero: Linkability for original libri_test is exactly
+    1.000 at every N. Running this check over the project's own committed
+    results surfaced both kinds at once, and conflating them would send
+    somebody to repair resampling that works. So they are separated: a zero at
+    the bound is reported as saturation, and only a zero away from the bound is
+    the resampling bug.
     """
     rows = _rows(report)
-    offenders = []
+    broken: list[str] = []
+    saturated: list[str] = []
     seen = 0
     for name, row in rows:
+        n = row.get("n")
+        bounds = ceilings(n) if isinstance(n, int) and n >= 2 else {}
         for key, value in row.items():
             if not key.endswith("_sem"):
                 continue
             seen += 1
-            if isinstance(value, (int, float)) and value == 0.0:
-                offenders.append(f"{name} n={row.get('n')} {key}")
+            if not isinstance(value, (int, float)) or value != 0.0:
+                continue
+            metric = key[: -len("_sem")]
+            observed = row.get(metric)
+            bound = bounds.get(metric)
+            at_bound = (
+                isinstance(observed, (int, float))
+                and bound is not None
+                and math.isclose(observed, bound, rel_tol=1e-9, abs_tol=1e-9)
+            )
+            where = f"{name} n={n} {key}"
+            (saturated if at_bound else broken).append(where)
+
+    hazard = "a standard error of exactly zero is a bug, not precision"
     if not seen:
         return CheckResult("no_zero_standard_error", "skip",
-                           "this report carries no standard errors",
-                           "a standard error of exactly zero is a bug, not precision")
-    if offenders:
+                           "this report carries no standard errors", hazard)
+    if broken:
         return CheckResult(
             "no_zero_standard_error", "fail",
-            f"{len(offenders)} standard error(s) are exactly zero, e.g. "
-            f"{offenders[0]}. Resample trials, not only the candidate draw.",
-            "a standard error of exactly zero is a bug, not precision",
+            f"{len(broken)} standard error(s) are exactly zero away from the "
+            f"metric's bound, e.g. {broken[0]}. Resample trials, not only the "
+            f"candidate draw.",
+            hazard,
+        )
+    if saturated:
+        return CheckResult(
+            "no_zero_standard_error", "warn",
+            f"{len(saturated)} standard error(s) are zero because the metric is "
+            f"pinned at its bound in every replicate, e.g. {saturated[0]}. That "
+            f"is not a resampling fault, but the condition cannot separate "
+            f"systems: see saturation_declared.",
+            hazard,
         )
     return CheckResult("no_zero_standard_error", "pass",
-                       f"all {seen} standard error(s) are non-zero",
-                       "a standard error of exactly zero is a bug, not precision")
+                       f"all {seen} standard error(s) are non-zero", hazard)
 
 
 def check_saturation_declared(report: dict[str, Any]) -> CheckResult:
