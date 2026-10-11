@@ -70,6 +70,41 @@ with the dataset. Asking for 400 utterances of a 48 utterance dataset produced
 **The rule.** A filter that silently returns less than asked is worse than a
 crash. Refuse.
 
+### Library readers that assume a plain path
+
+**What happened.** A `wav.scp` value is not always a path. Kaldi allows an
+extended filename, a shell pipeline ending in `|`, which is how a corpus
+distributed as mp3 is addressed without transcoding it first. `soundfile.read`
+raises `TypeError: Invalid file` on one, and `torchaudio.load` raises too.
+
+Four separate sites in one pipeline had this defect:
+
+1. `anonymization/modules/sttts/text/recognition/ims_asr.py`
+2. `anonymization/modules/sttts/prosody/extraction/ims_prosody_extraction.py`
+3. `evaluation/privacy/asv/speaker_extraction.py`
+4. `evaluation/privacy/asv/speechbrain_vectors.py`
+
+Site 4 is the one worth remembering. It is reached from site 3, it re-reads the
+file site 3 has just decoded, and so fixing site 3 did not fix it: the smoke
+test still died on the first utterance, after the pipeline had been declared
+clean.
+
+There is a quieter half. `read_kaldi_format` returns a pipe entry as a list of
+tokens, and site 3 narrowed it with a literal index, `wav_path = wav_path[1]`.
+For a pipe entry token 1 is `-v`, an ffmpeg flag. That does not raise where it
+is written, which makes it worse than the loud version.
+
+**The test.** `scripts/check_scp_readers.py` walks a pipeline checkout for both
+halves, with an explicit waiver comment for a reviewed call:
+
+```sh
+python scripts/check_scp_readers.py --root /path/to/pipeline
+```
+
+`tests/test_check_scp_readers.py` pins it against the shape of all four sites.
+This started as a habit, "grep the pipeline before running it", and the habit
+failed twice in a row, which is the reason it is now a script.
+
 ### A merge that discards what it should keep
 
 **What happened.** The ASR shard merge was written to overwrite the canonical
@@ -161,17 +196,6 @@ concurrent shard workers each ran that install and clobbered `env_sttts.sh`.
 **The habit.** `export NEW_INSTALL_TRIGGER=no` once installed, and warm up with
 a single worker before launching many.
 
-### Library readers that assume a plain path
-
-**What happened.** `soundfile.read` raises `TypeError: Invalid file` on a Kaldi
-extended filename such as `ffmpeg -i x.mp3 -f wav - |`. mcadams worked because
-it used VPC's own pipe-aware `load_wav_from_scp`; sttts called `soundfile.read`
-directly in both its ASR and its prosody extractor, so Common Voice failed at
-the first utterance.
-
-**The habit.** When a corpus is reached through a pipe, grep the whole pipeline
-for direct reader calls before running it. There were two sites, not one.
-
 ### A per-job suffix derived from `None`
 
 **What happened.** `recognition_job` computes
@@ -191,4 +215,6 @@ it. The outer save was patched first and would not have been enough.
 2. Confirm the output lands where the design says, by name.
 3. Check a pid file, never `pgrep -f`, for "is it already running".
 4. Make sure a restart resumes rather than restarts, and prove it.
-5. If the corpus is reached through a pipe, confirm one entry decodes first.
+5. If the corpus is reached through a pipe, run
+   `scripts/check_scp_readers.py` over the checkout, then confirm one entry
+   decodes first. The check finds the readers; only a run finds the rest.
