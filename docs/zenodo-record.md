@@ -66,14 +66,38 @@ VoicePrivacy Challenge
 
 ## Description
 
-> **The live Zenodo record still carries the old wording.** The description below
-> has been corrected, but the published record at
-> [10.5281/zenodo.23142030](https://doi.org/10.5281/zenodo.23142030) says "The
-> framework was formally validated by the French Data Protection Authority
-> (CNIL)", which overstates the CNIL's technical opinion. Editing a Zenodo
-> description does not mint a new DOI, so this can be fixed in place. See
-> [`cnil-opinion.md`](cnil-opinion.md). **Action required by a human with Zenodo
-> access.**
+> **Two edits are needed on the live record.** The text below is correct; the
+> published description at
+> [10.5281/zenodo.23142030](https://doi.org/10.5281/zenodo.23142030) is not.
+> Editing a description does not mint a new DOI, so both can be fixed in place
+> and the citation is unaffected.
+>
+> **Edit 1, replace this sentence**, which overstates the CNIL's technical
+> opinion:
+>
+> > The framework was formally validated by the French Data Protection
+> > Authority (CNIL).
+>
+> **with:**
+>
+> > These metrics were the vehicle of a compliance demonstration that the
+> > CNIL's Technological Expertise Department reviewed in August 2024, finding
+> > no obstacle to the Voice Harbor solution demonstrating compliance with the
+> > three Opinion 05/2014 criteria (ref. MAI/SA241024). That is a technical
+> > opinion on a solution, not a certification of these metrics, and it does
+> > not transfer to a deployer.
+>
+> **Edit 2, insert this paragraph after it**, because the record currently
+> implies coverage of all three criteria:
+>
+> > Opinion 05/2014 sets three criteria. These metrics cover two of them,
+> > singling out and linkability. They do not measure inference, and nothing in
+> > this record speaks to whether an attacker can infer attributes about a
+> > person from anonymized speech. Data can pass both metrics and still fail the
+> > third criterion, in which case it is not anonymous.
+>
+> See [`cnil-opinion.md`](cnil-opinion.md). **Action required by a human with
+> Zenodo access.**
 
 Zenodo's description box is a **rich text editor**, not an HTML source field.
 Pasting HTML markup into it shows the tags literally instead of rendering them,
@@ -97,8 +121,15 @@ that the CNIL's Technological Expertise Department reviewed in August 2024,
 finding no obstacle to the Voice Harbor solution demonstrating compliance with
 the three Opinion 05/2014 criteria (ref. MAI/SA241024). That is a technical
 opinion on a solution, not a certification of these metrics, and it does not
-transfer to a deployer. This record holds the data needed to reproduce the
-paper's results. The reference implementation is at
+transfer to a deployer.
+
+Opinion 05/2014 sets three criteria. These metrics cover two of them, singling
+out and linkability. They do not measure inference, and nothing in this record
+speaks to whether an attacker can infer attributes about a person from
+anonymized speech. Data can pass both metrics and still fail the third
+criterion, in which case it is not anonymous.
+
+This record holds the data needed to reproduce the paper's results. The reference implementation is at
 https://github.com/brijmohan/voice-anonymization-legal-eval
 
 CONTENTS

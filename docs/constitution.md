@@ -289,17 +289,54 @@ Other failure modes worth naming:
 
 ### 4.5 Vocoder and prosody
 
-The vocoder is the last place identity can re-enter, by two routes.
+The vocoder is the last place identity can re-enter, and the literature is
+ahead of us on both routes. Both points below were written here as inference and
+are now replaced by citations.
 
-1. **Prosody passed through unmodified.** F0 contour, duration and energy are
-   identity-bearing. If the pipeline anonymises the speaker embedding and feeds
-   the original prosody to the vocoder, it has left a channel open. The sttts
-   pipeline has an explicit `prosody_anonymization` stage, which is the right
-   shape.
-2. **The vocoder's own training distribution.** A vocoder trained on a
-   particular speaker set imposes that set's characteristics, which can both
-   leak the training speakers and reduce the effective diversity of outputs
-   **[I]**.
+**1. Prosody is identity-bearing, and the fix is to perturb it, not to pass it
+through.** Meyer, Lux, Koch, Denisov, Tilli and Vu, "Prosody Is Not Identity: A
+Speaker Anonymization Approach Using Prosody Cloning", ICASSP 2023,
+doi:10.1109/icassp49357.2023.10096607, open with the premise **[P]**:
+
+> Prosody is closely linked to the identity of a speaker, leading to individual
+> pitch and intonation patterns.
+
+The title is a claim about what their *method* achieves, not a denial of that
+link. Their contribution is to clone the prosodic structure while breaking
+identity, by multiplying pitch and energy sequences by random offsets, reporting
+high privacy together with high pitch correlation.
+
+So the assertion here was right and its framing was wrong: prosody is not a
+channel you can leave open, and it is also not one you have to discard. The
+VoicePrivacy `sttts` baseline already implements their method, which is what the
+`anon_prosody/random_offsets` directory in its intermediates is **[M]**. We have
+been running their fix without citing it.
+
+**2. The vocoder does not faithfully render the embedding it is given, and the
+error is reversible.** Panariello, Todisco and Evans, "Vocoder drift in
+x-vector-based speaker anonymization", Interspeech 2023,
+doi:10.21437/interspeech.2023-448 **[P]**. Vocoder drift is the difference
+between the x-vector handed to the vocoder and the one recoverable from its
+output. Their findings: the drift is **learnable and therefore reversible by an
+attacker**, its impact is "substantial and sometimes dominant" relative to the
+anonymization function itself, and privacy may therefore be "weaker than
+previously thought".
+
+This is a sharper and more consequential mechanism than the one asserted here
+before, which was about the vocoder's training distribution narrowing output
+diversity. The real risk is not that the vocoder is biased, it is that the map
+from intended target to rendered target is systematic, so an attacker who learns
+it can undo part of the anonymization. It also means a pipeline that selects a
+pseudo-speaker carefully is not thereby delivering it.
+
+**Consequence for our own work.** Our G3 audit in
+[`../legal_eval/pseudo_speaker.py`](../legal_eval/pseudo_speaker.py) compares
+pseudo-speaker embeddings against real speakers. Vocoder drift says the
+embedding the pipeline *chose* is not the one the audio *carries*, so the audit
+should run on x-vectors extracted from the rendered audio, not on the intended
+targets. The run reported in section 3 did use attacker-space x-vectors from
+rendered audio, so it is on the right side of this, but by accident rather than
+by design **[M]**.
 
 **[?]** We have not isolated prosody's contribution by ablation (anonymise
 embedding only, versus embedding plus prosody, on identical content). That is a
