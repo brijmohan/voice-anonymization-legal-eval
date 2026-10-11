@@ -333,6 +333,50 @@ Repairing that would change what the attacker computes for every utterance and
 would move every number already reported. The utterance is skipped and written
 down instead.
 
+### 3.10 The third criterion is untouched by a system that moves the second
+
+The inference metric has now been run on real data for the first time, on the
+CV27 subsets, predicting reported gender from the released ASV embeddings with
+one row per speaker **[M]**:
+
+| condition | prior | accuracy | advantage | female recall |
+|---|---|---|---|---|
+| original, 6 utterances per speaker | 0.7195 | 0.9119 | +0.6859 | 0.8363 |
+| McAdams, 6 utterances per speaker | 0.7195 | 0.9136 | +0.6919 | 0.8423 |
+| original, 20 utterances per speaker | 0.7220 | 0.9334 | +0.7604 | 0.8771 |
+
+5879 of 10000 enrollment speakers report a gender, so the measurement runs on
+those and the prior is 0.72. Advantage is headroom above that prior, so 0 means
+the attacker did no better than naming the majority class.
+
+**McAdams moved the advantage by +0.006.** That is not a reduction, and it is
+inside the noise of a five-fold estimate. The same system moves Linkability on
+LibriSpeech from 0.955 to 0.914 **[M]**. So it does something, modest, to
+identification, and nothing whatever to attribute disclosure.
+
+This is the paper's own thesis extended, and it is the argument for why the
+third criterion had to be implemented rather than noted. Article 29 asks three
+questions, and a system can answer one of them partially while leaving another
+entirely open. A controller reporting Singling Out and Linkability alone would
+report that McAdams reduces risk. On inference it reduces nothing, and 84% of
+the women in the population are still correctly identified as women from the
+anonymized embedding.
+
+Two cautions, because the number is strong and will be quoted.
+
+The label is self-reported and binary, and absent for 41% of speakers. The
+excluded speakers are excluded because "not reported" is a property of an
+optional form field rather than an attribute of a person; this is argued in
+[`cv27-datasheet.md`](cv27-datasheet.md). Treating it as a third class would
+have raised accuracy while measuring something else.
+
+The features are the attacker's embeddings, which are trained for speaker
+discrimination. Gender is heavily entangled with speaker identity, so this
+result says that an embedding useful for verification carries gender. It does
+not establish that a system which defeated verification would also defeat
+gender inference. That is the interesting open question and the right next
+experiment is the ASR-BN condition, which moves Linkability to 0.386 **[?]**.
+
 ---
 
 ## 4. Where identity actually leaks
