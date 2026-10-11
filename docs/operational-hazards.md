@@ -1,0 +1,194 @@
+# Operational hazards, with the test or habit that catches each
+
+Every entry here cost real time on this project. They are recorded because
+several recurred after being fixed once, which means the fix was not the
+problem: not writing it down was.
+
+Grouped by whether a test can catch it or only a habit can.
+
+---
+
+## Caught by a test
+
+### A standard error of exactly zero
+
+**What happened.** The metric comparison reported that LID resolved a pair the
+rank metrics could not, and separately an EER-versus-LID inversion. Both were
+artifacts. The spread came from the closed-set draw alone, and when `N` equals
+the number of enrollment speakers that draw is deterministic, so the standard
+error was exactly `0.0000` and every difference looked resolved.
+
+**The rule.** An exactly-zero spread is a signal that the resampling is not
+capturing the right source of variation, not a sign of precision.
+
+**Test.** `tests/test_comparison.py` resamples trials as well as closed sets.
+`legal_eval/pseudo_speaker.py` carries its own chance level so a rate cannot be
+read without one.
+
+### Noise that does not scale with dimension
+
+**What happened, twice.** A fixture added `N(0, 0.35)` per dimension to
+unit-norm centres at dim 256. The noise norm is `0.35 * sqrt(256) = 5.6`, so the
+clusters vanished, mated and nonmated similarity coincided, and the fixture's
+verifier sat at EER 0.38. Every threshold then admitted everything and the
+pseudo-speaker audit appeared to fire on unrelated vectors. The same mistake had
+already been made in the demo scatter.
+
+**The rule.** In high dimensions, per-dimension scale is not perceptual scale.
+Divide by `sqrt(dim)` whenever noise is meant to be a fraction of a vector's
+norm.
+
+**Test.** `tests/test_pseudo_speaker.py` asserts the fixture's own verifier
+reaches EER below 0.01, so a broken fixture fails loudly instead of making the
+measurement look permissive.
+
+### A classifier that memorises the speaker, not the attribute
+
+**What happened.** The first attribute-inference draft pooled many rows per
+speaker. A speaker appearing in both folds lets the probe recognise the speaker
+and score well on the attribute for the wrong reason, reporting identity
+leakage as attribute leakage.
+
+**Test.** `tests/test_inference.py` compares grouped against ungrouped on
+features that encode only the speaker.
+
+### Reporting the majority class as the exposed one
+
+**What happened.** `AttributeDisclosure.summary` reported the best per-class
+recall, which is almost always the majority class, which is exactly what the
+prior already predicts. The legally salient case is a rare value recovered well.
+
+**Test.** `tests/test_inference.py` plants a strongly encoded rare class and
+asserts the summary names it.
+
+### A silent intersection that invalidates a measurement
+
+**What happened.** The sharding harness intersected the requested utterance list
+with the dataset. Asking for 400 utterances of a 48 utterance dataset produced
+48 and said nothing, so the benchmark was meaningless without failing.
+
+**The rule.** A filter that silently returns less than asked is worse than a
+crash. Refuse.
+
+### A merge that discards what it should keep
+
+**What happened.** The ASR shard merge was written to overwrite the canonical
+`text`, and a test asserted that as correct. But the pipeline's resume reads
+only `text`, so a shard covers the remainder and discarding `text` loses exactly
+the utterances an earlier run completed. The test was reversed.
+
+**Test.** `tests/test_merge_asr_shards.py` asserts the canonical file is folded
+in and that shard entries win on conflict.
+
+---
+
+## Caught only by a habit
+
+### `pgrep -f` and `pkill -f` match their own command line
+
+**Three occurrences, the third fatal.** `pgrep -f run_all.sh` reported a job was
+already running when it was not. `pgrep -f "tar xzf common-voice"` reported a
+finished extraction as still running. Then `pkill -TERM -f anon_sttts_cv27`
+killed the SSH session carrying it, producing three `ssh exited with return code
+[255]` failures that looked like a network outage while the workstation was
+`RUNNING` and reachable.
+
+**The habit.** Bracket one character so the pattern cannot match itself:
+
+```sh
+pgrep -f "anon_sttts_cv2[7]"
+pkill -TERM -f "anon_sttts_cv2[7]"
+```
+
+Or use a pid file, which is what the long runs here do.
+
+### Nested heredocs and `$` expansion
+
+**What happened.** An outer unquoted `<<EOF` containing an inner `<<'INNER'`
+expanded `$BENCH` at write time, so the remote script sourced `/env.sh`.
+
+**The habit.** Do not nest heredocs across a transport boundary. Write the
+script locally, `base64` it, and decode on the far side. Every patch in this
+project that worked first time used that pattern.
+
+### `set -u` against someone else's environment script
+
+**What happened.** Adding `set -u` to a runner aborted immediately, because
+VPC's `env.sh` dereferences `LD_LIBRARY_PATH` before setting it.
+
+**The habit.** `set -e` only when sourcing third-party shell. Their
+`run_baseline.sh` does the same, for the same reason.
+
+### zsh does not word-split unquoted parameters
+
+**What happened.** `for p in $TARGETS; do kill $p; done` iterated once with the
+entire string, so twelve processes produced one "could not signal". In bash this
+works; in zsh it does not.
+
+**The habit.** Pass explicit arguments, or use an array. This shell is zsh.
+
+### `grep -P` is not portable, and fails open
+
+**What happened.** The documented em-dash check was `grep -nP`. BSD grep, which
+macOS ships, has no `-P` and exits with a usage error, which in a pipeline reads
+as "nothing found". A dash reached `CONTRIBUTING.md` and survived several passes.
+
+**The fix.** `scripts/check_no_dashes.py`, in CI, no grep.
+
+### Testing the wrong command's exit status
+
+**What happened.** A retry loop was written as
+`if gcloud ... | grep -v noise; then break; fi`. That tests grep, which
+succeeds, so the loop exited after one failed attempt.
+
+**The habit.** Capture into a variable, test `$?` of the command that matters,
+then filter for display.
+
+### `wget -q` hides a failed download
+
+**What happened.** Editing `install.sh` tripped VPC's checksum, which re-ran its
+download block. `wget -q` failed silently, the GAN model vanished, and the next
+run died on a missing `style-embed_wgan.pt` after the expensive work was done.
+
+**The habit.** Never `-q` on a fetch whose absence breaks a later stage. Log it
+and check the exit status.
+
+### Editing an upstream file can trigger its reinstall
+
+**What happened.** VPC hashes `install.sh` and reinstalls when it changes. Eight
+concurrent shard workers each ran that install and clobbered `env_sttts.sh`.
+
+**The habit.** `export NEW_INSTALL_TRIGGER=no` once installed, and warm up with
+a single worker before launching many.
+
+### Library readers that assume a plain path
+
+**What happened.** `soundfile.read` raises `TypeError: Invalid file` on a Kaldi
+extended filename such as `ffmpeg -i x.mp3 -f wav - |`. mcadams worked because
+it used VPC's own pipe-aware `load_wav_from_scp`; sttts called `soundfile.read`
+directly in both its ASR and its prosody extractor, so Common Voice failed at
+the first utterance.
+
+**The habit.** When a corpus is reached through a pipe, grep the whole pipeline
+for direct reader calls before running it. There were two sites, not one.
+
+### A per-job suffix derived from `None`
+
+**What happened.** `recognition_job` computes
+`add_suffix = f'_{job_id}' if job_id is not None else None`, and the
+single-process path passes `None`, so it writes the canonical `text` every 100
+utterances. Eight shards would have overwritten each other, which is the exact
+race the sharding design existed to avoid.
+
+**The habit.** Before parallelising someone else's loop, find every write inside
+it. The outer save was patched first and would not have been enough.
+
+---
+
+## Before launching anything long
+
+1. Warm up with **one** worker and read its first log lines.
+2. Confirm the output lands where the design says, by name.
+3. Check a pid file, never `pgrep -f`, for "is it already running".
+4. Make sure a restart resumes rather than restarts, and prove it.
+5. If the corpus is reached through a pipe, confirm one entry decodes first.

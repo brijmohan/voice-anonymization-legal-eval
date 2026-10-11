@@ -94,6 +94,23 @@ Docstrings are Google style and say what a number *means*, not what type it is.
 Comments explain why. If a line encodes a decision from the paper, or a
 deliberate departure from the original code, the comment says which.
 
+## Hazards that have already cost time
+
+Read [`docs/operational-hazards.md`](docs/operational-hazards.md) before any
+long run or any change to the VoicePrivacy checkout. The four that recurred
+after being fixed once:
+
+- **`pgrep -f` and `pkill -f` match their own command line.** Bracket a
+  character (`anon_sttts_cv2[7]`) or use a pid file. One occurrence killed the
+  SSH session and looked like a network outage for twenty minutes.
+- **Noise must scale as `1/sqrt(dim)`** when it is meant to be a fraction of a
+  unit vector's norm. Got this wrong twice, and both times a fixture silently
+  stopped testing anything.
+- **A standard error of exactly zero** means the resampling is wrong, not that
+  the estimate is precise.
+- **zsh does not word-split unquoted parameters**, so `for x in $LIST` iterates
+  once. Pass explicit arguments.
+
 ## Commands
 
 ```sh
