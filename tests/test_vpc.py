@@ -285,3 +285,58 @@ def test_two_systems_in_one_directory_are_not_crossed(tmp_path):
     assert {p.system for p in pairs if p.scenario == "oa"} == {"_mcadams", "_asrbn"}
     assert {p.system for p in pairs if p.scenario == "ao"} == {"_mcadams", "_asrbn"}
     assert [p.system for p in pairs if p.scenario == "oo"] == [""]
+
+
+def test_unpaired_datasets_names_what_pairs_with_nothing(tmp_path):
+    """A dataset can hold embeddings and still contribute no system.
+
+    This is how a Common Voice subset extracted as cv27_A_enroll and
+    cv27_B_test produced no systems at all: both directories were full,
+    nothing raised, and the comparison simply had nothing to say about Common
+    Voice. The failure is a shorter list, which is invisible unless something
+    names it.
+    """
+    from legal_eval.vpc import find_embedding_dirs, pair_datasets, unpaired_datasets
+
+    root = tmp_path / "emb_xvect"
+    for name in ("cv27_A_enroll", "cv27_B_test",
+                 "cv27_enrolls", "cv27_trials_mixed"):
+        level = root / name / "utt-level"
+        level.mkdir(parents=True)
+        (level / "speaker_vectors.pt").write_bytes(b"")
+
+    discovered = find_embedding_dirs(root)
+    assert len(discovered) == 4
+
+    pairs = pair_datasets(discovered)
+    assert [(p.enroll_name, p.trial_name) for p in pairs] == [
+        ("cv27_enrolls", "cv27_trials_mixed")
+    ]
+
+    assert unpaired_datasets(discovered, pairs) == ["cv27_A_enroll", "cv27_B_test"]
+
+
+def test_unpaired_datasets_is_empty_when_everything_pairs(tmp_path):
+    from legal_eval.vpc import find_embedding_dirs, unpaired_datasets
+
+    root = tmp_path / "emb_xvect"
+    for name in ("libri_dev_enrolls", "libri_dev_trials_mixed",
+                 "libri_dev_enrolls_mcadams", "libri_dev_trials_mixed_mcadams"):
+        level = root / name / "utt-level"
+        level.mkdir(parents=True)
+        (level / "speaker_vectors.pt").write_bytes(b"")
+
+    discovered = find_embedding_dirs(root)
+    assert unpaired_datasets(discovered) == []
+
+
+def test_unpaired_datasets_computes_pairs_when_not_given(tmp_path):
+    from legal_eval.vpc import find_embedding_dirs, unpaired_datasets
+
+    root = tmp_path / "emb_xvect"
+    for name in ("cv27_A_enroll", "cv27_enrolls", "cv27_trials_mixed"):
+        level = root / name / "utt-level"
+        level.mkdir(parents=True)
+        (level / "speaker_vectors.pt").write_bytes(b"")
+
+    assert unpaired_datasets(find_embedding_dirs(root)) == ["cv27_A_enroll"]

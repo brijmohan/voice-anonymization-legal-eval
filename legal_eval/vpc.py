@@ -27,6 +27,7 @@ require. It is always present in a VPC environment; elsewhere install the
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -381,6 +382,40 @@ def pair_datasets(discovered: dict[str, dict[str, Path]]) -> list[DatasetPair]:
                 )
             )
     return sorted(pairs, key=lambda p: (p.base, p.system, p.scenario))
+
+
+def unpaired_datasets(
+    discovered: dict[str, dict[str, Path]],
+    pairs: Sequence[DatasetPair] | None = None,
+) -> list[str]:
+    """Datasets that hold embeddings but take part in no pair.
+
+    :func:`pair_datasets` recognises a dataset only by VPC's naming,
+    ``<base>_enrolls<suffix>`` against ``<base>_trials_<kind><suffix>``. A
+    directory named anything else is discovered and then silently dropped, and
+    the caller sees no error: it sees a shorter list of systems.
+
+    That is how a Common Voice subset extracted as ``cv27_A_enroll`` and
+    ``cv27_B_test`` came to produce no systems at all. Both directories were
+    full of embeddings, nothing failed, and the comparison simply had nothing
+    to say about Common Voice. Renaming them to ``cv27_enrolls`` and
+    ``cv27_trials_mixed`` fixed it.
+
+    Use this before trusting a comparison to cover what you think it covers.
+
+    Args:
+        discovered: Output of :func:`find_embedding_dirs`.
+        pairs: Output of :func:`pair_datasets` on the same input. Computed from
+            ``discovered`` when not given.
+
+    Returns:
+        Sorted dataset names that appear on neither side of any pair. Empty
+        means every discovered dataset is accounted for.
+    """
+    if pairs is None:
+        pairs = pair_datasets(discovered)
+    used = {p.enroll_name for p in pairs} | {p.trial_name for p in pairs}
+    return sorted(name for name in discovered if name not in used)
 
 
 def benchmark_vpc_run(

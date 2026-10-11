@@ -167,10 +167,28 @@ def build_demo_systems(n_speakers: int = 300, seed: int = 0) -> list[System]:
 
 def build_vpc_systems(results_dir: Path) -> list[System]:
     """One system per original and fully anonymized VoicePrivacy dataset pair."""
-    from legal_eval.vpc import find_embedding_dirs, load_vpc_embeddings, pair_datasets
+    from legal_eval.vpc import (
+        find_embedding_dirs,
+        load_vpc_embeddings,
+        pair_datasets,
+        unpaired_datasets,
+    )
+
+    discovered = find_embedding_dirs(results_dir)
+    pairs = pair_datasets(discovered)
+    # A directory that does not follow VPC's naming is discovered and then
+    # dropped, so the comparison would quietly cover less than it appears to.
+    orphans = unpaired_datasets(discovered, pairs)
+    if orphans:
+        print(f"WARNING: {len(orphans)} dataset(s) hold embeddings but pair with "
+              f"nothing, so they contribute no system:")
+        for name in orphans:
+            print(f"  {name}")
+        print("  VPC naming is <base>_enrolls<suffix> and "
+              "<base>_trials_<kind><suffix>.")
 
     systems, seen = [], set()
-    for pair in pair_datasets(find_embedding_dirs(results_dir)):
+    for pair in pairs:
         if pair.scenario not in ("oo", "aa"):
             continue
         # A shared ASV directory holds one original copy and several anonymized
