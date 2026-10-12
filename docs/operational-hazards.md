@@ -286,6 +286,30 @@ same applies to a config a long job re-reads between stages.
 This one was caught by noticing it rather than by anything failing, which is
 the weakest way to catch something.
 
+### Credentials expire in the middle of a multi-hour run
+
+**What happened.** `gcloud` tokens last a few hours. Twice in one session they
+expired mid-experiment, and both times the failure landed on the orchestration
+rather than the work:
+
+```
+There was a problem refreshing your current auth tokens: Reauthentication
+failed. cannot prompt during non-interactive execution.
+```
+
+The first time it stopped a shard merge. The second time it stopped the step
+that would have launched the next stage, so a run that was 20,000 files into
+60,000 had nothing waiting to pick it up when it finished. The computation was
+never at risk, because it was already detached on the box. The chain was.
+
+**The habit.** Anything long runs entirely on the remote machine, as one
+detached script with a pid file, and the local side only reads its log. Do not
+build a pipeline whose next stage is launched from here after the previous one
+finishes: that makes a token with a few hours left a dependency of a run with
+more hours to go. Where a stage has to wait for another, let it wait on the box
+by polling the pid, and have it verify a positive completion condition before
+continuing.
+
 ### Buffered output makes a long job indistinguishable from a hung one
 
 **What happened.** Three times in one day, a job that was working looked dead.
