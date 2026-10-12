@@ -658,6 +658,71 @@ a non-specialist: on the ENFSI scale, the strength of evidence about the most
 exposed individual is unchanged by the DSP baseline and improves by one
 category under the best systems tested.
 
+### 3.15 The ranking metrics are not redundant, and I said they were
+
+The standard errors are now in, and they refute the claim in 3.13 that
+Linkability, SRD and LID are close to redundant. That claim was made from point
+estimates with the significance explicitly deferred, and the deferred check
+says the opposite.
+
+The spread of each metric over folds and runs is small, because at this
+population it is an average over thousands of enrollment speakers **[M]**:
+
+| N | Linkability | SRD MeanD | LID ALID | Singling Out |
+|---|---|---|---|---|
+| 29 | 0.9131 ± 0.0007 | 4.239 ± 0.007 | 4.391 ± 0.005 | 0.6629 ± 0.0020 |
+| 9,779 | 0.4515 ± 0.0012 | 8.700 ± 0.010 | 8.270 ± 0.008 | 0.3926 ± 0.0029 |
+
+Propagating those through the fraction of available room McAdams closed, and
+asking whether each pair of metrics differs by more than its combined error
+**[M]**:
+
+| N | Link vs SRD | Link vs LID | SRD vs LID | Singling Out vs the rank mean |
+|---|---|---|---|---|
+| 29 | 13.0 σ | 2.5 σ | 10.5 σ | 28.4 σ |
+| 100 | 1.5 σ | 9.7 σ | 9.3 σ | 27.7 σ |
+| 2,500 | 28.0 σ | 29.2 σ | 0.6 σ | 18.5 σ |
+| 9,779 | 42.2 σ | 39.3 σ | 7.9 σ | 6.2 σ |
+
+**The rank metrics differ from each other by 10 to 40 standard errors almost
+everywhere.** Their absolute differences are small, 0.02 to 0.06 on the closed
+fraction, which is what "close to redundant" was describing, but small is not
+the same as indistinguishable. They are measurably different quantities.
+
+The estimate is conservative, which makes it worse for my claim rather than
+better. All four metrics come from the same draws, so their errors are
+positively correlated, and treating them as independent overstates the error of
+a difference. The true significance is higher than the table shows.
+
+**What survives, and it is the part that matters.** Singling Out separates from
+the rank cluster by 6 to 32 standard errors as well as by a much larger
+absolute margin, so the two-axis structure in 3.13 and the room collapse in
+3.14 both hold. What does not survive is the recommendation that followed from
+redundancy. **We cannot tell the field that three of its metrics are
+interchangeable, because on this evidence they are not.**
+
+The only redundancy actually demonstrated is definitional: SRD's identification
+rate is the Linkability metric, and the two agree exactly where the candidate
+draw is deterministic and differ by at most 0.0022 elsewhere, which is
+independent sampling of one quantity rather than two quantities agreeing
+**[M]**.
+
+### 3.16 And the figure I led with needs its error bar
+
+3.14 reported that at `N = 9,779` McAdams closes 98% of Singling Out's
+available room. The propagated figure is **0.980 ± 0.114** **[M]**, so anywhere
+between 0.75 and 1.21.
+
+The error explodes for the same reason the finding is interesting: the room is
+only 0.0247, and dividing a difference by a small number magnifies its error.
+So the right way to state 3.14 is that **Singling Out's room collapses until
+the fraction closed cannot be determined**, which is a stronger statement about
+the metric than a precise 98% would have been, and an honest one.
+
+The claim in 3.14 that does not need qualifying is the raw comparison, because
+it involves no division: Singling Out reads 0.3684 against a chance level of
+0.3679, and Linkability reads 0.2810 where chance is 0.0001 **[M]**.
+
 ---
 
 ## 4. Where identity actually leaks

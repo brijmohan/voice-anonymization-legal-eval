@@ -72,19 +72,39 @@ averaged over**, and within a row they largely agree:
 | a candidate population of size `N`, by **rank** | Linkability, SRD, LID | implemented |
 | a candidate population of size `N`, by **threshold** | Singling Out | implemented |
 
-**Within the rank row the metrics are close to redundant.** On Common Voice,
-asked what fraction of the available room McAdams closed, Linkability, SRD
-MeanD and LID ALID agree to within 0.02 to 0.06, while Singling Out says about
-2.8 times as much and does so stably from `N = 5` to `N = 500` **[M]**. SRD's
-IdR is Linkability exactly **[M]**.
+**Within the rank row the metrics cluster numerically but are not
+interchangeable.** On Common Voice, asked what fraction of the available room
+McAdams closed, Linkability, SRD MeanD and LID ALID fall within 0.02 to 0.06 of
+each other while Singling Out says several times as much **[M]**.
+
+**That clustering is not agreement, and an earlier version of this note said it
+was.** With the standard errors propagated, the rank metrics differ from each
+other by 10 to 40 standard errors almost everywhere **[M]**. Their differences
+are small in absolute terms and far outside the noise, so they are measurably
+different quantities. The estimate is conservative: all four come from the same
+draws, so their errors are positively correlated and treating them as
+independent overstates the error of a difference.
+
+So this comparison does **not** support telling the field that three of its
+metrics are interchangeable. What it supports is that Singling Out is a
+different kind of measurement from the other three, separating from them by 6
+to 32 standard errors as well as by a large absolute margin.
+
+The one redundancy actually demonstrated is definitional. SRD's identification
+rate **is** the Linkability metric: identical where the candidate draw is
+deterministic, and differing by at most 0.0022 elsewhere, which is one quantity
+sampled twice rather than two quantities agreeing **[M]**.
 
 The mechanism is that a rank survives any monotone squeeze of the scores and a
 threshold does not, so the compression that barely disturbs an ordering pushes
 many candidates across a fixed decision boundary.
 
-**The consequence for a procedure is to require one metric per axis**, rather
-than several from one. Reporting Linkability, SRD and LID together reads as
-triangulation and is closer to repetition. And the four axes map onto
+**The consequence for a procedure is to specify a population per metric**, not
+one population for all of them, because each metric's usable range differs and
+Singling Out's room collapses by a factor of 21 across the range measured here
+**[M]**. An earlier version of this note recommended one metric per axis on the
+grounds that the rank row was redundant; the standard errors do not support
+that and the recommendation has been withdrawn. The four axes do map onto
 distinctions that already exist in law: Article 29 separates singling out from
 linkability, which is the threshold and rank rows, and the worst-individual row
 is the one a data protection authority asks about when it asks whether any
