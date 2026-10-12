@@ -523,6 +523,68 @@ semi-informed attacker would be more accurate on the original at a given `N`,
 pushing the confounded boundary outward. The window is a property of the
 attacker and the corpus, not of the metric **[I]**.
 
+### 3.13 The metrics fall into two families, and only one of them is crowded
+
+This is RQ1's answer on the first data where it could be asked, and it is the
+most useful thing this project has measured.
+
+Comparing McAdams against the original on Common Voice, per population, asking
+of each metric **what fraction of the available room it says the system
+closed**, where room is the original's own value minus the chance level at that
+same population **[M]**:
+
+| N | Singling Out | Linkability | SRD MeanD | LID ALID | spread among the last three | ratio |
+|---|---|---|---|---|---|---|
+| 5 | 0.222 | 0.054 | 0.113 | 0.088 | 0.059 | 2.61x |
+| 29 | 0.355 | 0.114 | 0.144 | 0.119 | 0.029 | 2.82x |
+| 50 | 0.421 | 0.136 | 0.154 | 0.131 | 0.023 | 3.01x |
+| 100 | 0.453 | 0.170 | 0.166 | 0.147 | 0.023 | 2.82x |
+| 250 | 0.526 | 0.212 | 0.180 | 0.166 | 0.046 | 2.83x |
+| 500 | 0.609 | 0.244 | 0.192 | 0.181 | 0.064 | 2.96x |
+
+**Linkability, SRD and LID agree with each other to within 0.02 to 0.06.**
+**Singling Out says about 2.8 times as much**, and that factor is stable from
+`N = 5` to `N = 500`, a hundredfold range of population.
+
+The stability is what makes this a structural result rather than an artefact.
+It survives the saturated regime at the bottom and the confounded regime at the
+top, so it is not produced by either.
+
+**The mechanism is that the metrics ask different questions.** Linkability, SRD
+and LID all read off the **ordering** of candidates, and an ordering is
+invariant to any monotone squeeze of the scores. Singling Out requires a
+**threshold** that isolates exactly one candidate, and a threshold is not
+invariant to a squeeze: the same compression that barely disturbs a ranking
+moves a large number of candidates across a fixed decision boundary.
+
+So the two families are:
+
+- **ranking**: Linkability, SRD MeanD, LID ALID, and SRD's IdR, which is
+  Linkability exactly **[M]**
+- **thresholding**: Singling Out
+
+**What this means for a standard, which is the point of measuring it.** The
+field has roughly nine privacy quantities. They are not nine measurements.
+Reporting Linkability, SRD and LID together looks like triangulation and is
+closer to repetition. What a procedure should require is **one metric from each
+family**, because the families differ by a factor of three on the same data and
+neither is wrong.
+
+And this is exactly the distinction Article 29 draws. "Singling out" asks
+whether one person can be isolated; "linkability" asks whether records can be
+tied together. The Opinion separates them on legal grounds, and the measurement
+says the separation is operationally real and worth about a factor of three.
+
+**What this does not establish.** One corpus, one attacker, two systems, so the
+families are inferred from a single contrast. "Thresholding family" is a family
+with one member, and a second thresholding metric could disagree with Singling
+Out as much as Singling Out disagrees with the ranking metrics. The agreement
+within the ranking family has not yet been checked against the standard errors,
+so "agree to within 0.02" is a statement about point estimates **[M]** and not
+yet about significance **[?]**. ZEBRA, Cllr and the Gomez-Barrero linkability
+are not in this comparison and all three should be: ZEBRA in particular reports
+a worst-case individual figure that neither family here provides.
+
 ---
 
 ## 4. Where identity actually leaks
