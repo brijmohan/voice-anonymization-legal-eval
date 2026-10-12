@@ -391,3 +391,80 @@ def test_excluded_utterances_on_a_missing_directory_is_empty(tmp_path):
     from legal_eval.vpc import excluded_utterances
 
     assert excluded_utterances(tmp_path / "absent") == {}
+
+
+# Shard leftovers that pair with each other and become fictitious systems.
+
+def test_suspicious_datasets_flags_shard_leftovers():
+    """Twenty-four leftovers once produced twelve entirely fictitious systems.
+
+    pair_datasets cannot tell them apart from real ones: they satisfy the
+    naming pattern and pair perfectly with each other.
+    """
+    from legal_eval.vpc import suspicious_datasets
+
+    discovered = {n: {} for n in (
+        "cv27_enrolls", "cv27_trials_mixed",
+        "cv27_enrolls_mcadams", "cv27_trials_mixed_mcadams",
+        "cv27_enrolls_mcadams_sh0", "cv27_trials_mixed_mcadams_sh0",
+        "cv27_enrolls_sh3", "cv27_trials_mixed_sh3",
+    )}
+    flagged = suspicious_datasets(discovered)
+    assert set(flagged) == {
+        "cv27_enrolls_mcadams_sh0", "cv27_trials_mixed_mcadams_sh0",
+        "cv27_enrolls_sh3", "cv27_trials_mixed_sh3",
+    }
+    for reason in flagged.values():
+        assert reason
+
+
+def test_real_systems_are_never_flagged():
+    """A guard that flags a real system is worse than no guard."""
+    from legal_eval.vpc import suspicious_datasets
+
+    discovered = {n: {} for n in (
+        "libri_dev_enrolls", "libri_dev_trials_mixed",
+        "libri_dev_enrolls_mcadams", "libri_dev_trials_mixed_mcadams",
+        "libri_dev_enrolls_sttts", "libri_dev_trials_mixed_sttts",
+        "libri_test_enrolls_asrbn_hifigan_bn_tdnnf_wav2vec2_vq_48_v1",
+        "libri_test_trials_mixed_asrbn_hifigan_bn_tdnnf_wav2vec2_vq_48_v1",
+        "cv27_enrolls", "cv27_trials_mixed",
+    )}
+    assert suspicious_datasets(discovered) == {}
+
+
+@pytest.mark.parametrize("name", [
+    "cv27_enrolls_x_sh0", "cv27_enrolls_x_shard2", "cv27_enrolls_x_part7",
+    "cv27_enrolls_x_chunk1", "cv27_enrolls_x_split3",
+    "temp_enrolls", "cv27_enrolls_temp", "tmp_enrolls",
+    "smoke_enrolls", "warm_enrolls",
+])
+def test_each_intermediate_pattern_is_caught(name):
+    from legal_eval.vpc import suspicious_datasets
+
+    assert name in suspicious_datasets({name: {}})
+
+
+def test_a_suffix_extending_another_is_flagged_without_a_known_pattern():
+    """The structural rule, so an unanticipated naming scheme is still caught."""
+    from legal_eval.vpc import suspicious_datasets
+
+    discovered = {n: {} for n in (
+        "cv27_enrolls_mcadams", "cv27_trials_mixed_mcadams",
+        "cv27_enrolls_mcadams_piece_alpha", "cv27_trials_mixed_mcadams_piece_alpha",
+    )}
+    flagged = suspicious_datasets(discovered)
+    assert "cv27_enrolls_mcadams_piece_alpha" in flagged
+    assert "extends" in flagged["cv27_enrolls_mcadams_piece_alpha"]
+    assert "cv27_enrolls_mcadams" not in flagged
+
+
+def test_the_original_with_an_empty_suffix_is_not_flagged_as_extended():
+    """Every suffix extends the empty one; that must not flag everything."""
+    from legal_eval.vpc import suspicious_datasets
+
+    discovered = {n: {} for n in (
+        "cv27_enrolls", "cv27_trials_mixed",
+        "cv27_enrolls_mcadams", "cv27_trials_mixed_mcadams",
+    )}
+    assert suspicious_datasets(discovered) == {}

@@ -153,10 +153,25 @@ def build_vpc_systems(results_dir: Path) -> list[System]:
         find_embedding_dirs,
         load_vpc_embeddings,
         pair_datasets,
+        suspicious_datasets,
         unpaired_datasets,
     )
 
     discovered = find_embedding_dirs(results_dir)
+
+    # Sharded extraction leaves one directory per shard, and if they are named
+    # by extending the real name they pair with each other and become whole
+    # fictitious systems. Twenty-four such leftovers once produced twelve.
+    # They are skipped rather than scored, and named so the skip is visible.
+    intermediates = suspicious_datasets(discovered)
+    if intermediates:
+        print(f"SKIPPING {len(intermediates)} dataset(s) that look like "
+              f"intermediates rather than evaluated systems:")
+        for name, reason in sorted(intermediates.items()):
+            print(f"  {name}: {reason}")
+        print("  Move them out of the embedding directory to silence this.")
+        discovered = {k: v for k, v in discovered.items() if k not in intermediates}
+
     pairs = pair_datasets(discovered)
     # A directory that does not follow VPC's naming is discovered and then
     # dropped, so the comparison would quietly cover less than it appears to.

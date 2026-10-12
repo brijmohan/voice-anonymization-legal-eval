@@ -463,6 +463,98 @@ def excluded_utterances(results_dir: str | Path) -> dict[str, list[str]]:
     return out
 
 
+#: Names that mark an intermediate artifact rather than an evaluated system.
+#: Matched against the whole dataset name, case-insensitively.
+INTERMEDIATE_PATTERNS = (
+    r"_sh\d+$",
+    r"_shard\d+$",
+    r"_part\d+$",
+    r"_chunk\d+$",
+    r"_split\d+$",
+    r"^temp",
+    r"_temp$",
+    r"^tmp",
+    r"_tmp$",
+    r"^smoke",
+    r"^warm",
+)
+
+
+def suspicious_datasets(discovered: dict[str, dict[str, Path]]) -> dict[str, str]:
+    """Discovered datasets that look like intermediates, with the reason.
+
+    Sharded extraction leaves one embedding directory per shard. If those are
+    named by extending the real dataset's name, which is the obvious way to
+    name them, they satisfy VPC's pattern and **pair with each other**, so
+    :func:`pair_datasets` yields a complete and entirely fictitious system per
+    shard.
+
+    That happened here. Twenty-four leftover directories produced twelve
+    spurious systems, each a sixth of the data, and the comparison began
+    computing full metrics for them. It is worse than wasted time: the output
+    would have carried twelve systems that do not exist, and the partial order
+    over systems would have been drawn from them.
+
+    :func:`unpaired_datasets` cannot catch this. It finds datasets that pair
+    with nothing; these pair perfectly.
+
+    Two rules, because the first is a guess about naming and the second is not:
+
+    - the name matches a known intermediate pattern such as ``_sh0``
+    - the name's system suffix strictly extends another discovered system's
+      suffix, so ``cv27_enrolls_mcadams_sh0`` is suspicious whenever
+      ``cv27_enrolls_mcadams`` is also present
+
+    Args:
+        discovered: Output of :func:`find_embedding_dirs`.
+
+    Returns:
+        Dataset name to the reason it looks like an intermediate, for the
+        names that do. Empty when none do.
+    """
+    import re
+
+    out: dict[str, str] = {}
+    for name in discovered:
+        for pattern in INTERMEDIATE_PATTERNS:
+            if re.search(pattern, name, re.IGNORECASE):
+                out[name] = f"name matches the intermediate pattern {pattern!r}"
+                break
+
+    # The structural rule: a suffix that extends another present suffix.
+    def split_name(name: str) -> tuple[str, str] | None:
+        if "_enrolls" in name:
+            base, _, suffix = name.partition("_enrolls")
+            return base, suffix
+        if "_trials" in name:
+            base, _, rest = name.partition("_trials")
+            parts = rest.split("_")
+            return base, "_".join([""] + parts[2:]) if len(parts) > 2 else (base, "")
+        return None
+
+    parsed = {}
+    for name in discovered:
+        got = split_name(name)
+        if isinstance(got, tuple) and len(got) == 2 and isinstance(got[1], str):
+            parsed[name] = got
+
+    suffixes_by_base: dict[str, set[str]] = {}
+    for base, suffix in parsed.values():
+        suffixes_by_base.setdefault(base, set()).add(suffix)
+
+    for name, (base, suffix) in parsed.items():
+        if name in out or not suffix:
+            continue
+        for other in suffixes_by_base.get(base, set()):
+            if other and other != suffix and suffix.startswith(other):
+                out[name] = (
+                    f"its system suffix {suffix!r} extends {other!r}, which is "
+                    f"also present, so this looks like an intermediate of it"
+                )
+                break
+    return out
+
+
 def benchmark_vpc_run(
     results_dir: str | Path,
     distractor_dataset: str | None = None,
