@@ -1,8 +1,39 @@
 # Comparing the recent privacy metrics
 
-Four groups have proposed replacing the equal error rate as the measure of
-residual re-identification risk in anonymized speech. None of the four has been
-run against the others on the same data.
+Several groups have proposed replacing the equal error rate as the measure of
+residual re-identification risk in anonymized speech, and none has been run
+against the others on the same data.
+
+**Correction, 12 October 2026.** This note previously said "four groups", and
+listed the four below. That undercounts, and it undercounts in a way that
+matters for anyone deciding what to adopt. Reading the VoicePrivacy 2026
+checkout shows that the challenge's own evaluation code already ships four
+further privacy quantities **[M]**:
+
+| Already in the challenge's code | What it is | Origin |
+|---|---|---|
+| `metrics/cllr.py` | Cllr, min and actual | Brummer et al., via Nautsch |
+| `metrics/linkability.py` | `D_sys` linkability | Gomez-Barrero et al. |
+| `metrics/utils/zebra_plots.py` | ZEBRA: population and worst-case disclosure | Nautsch et al., Interspeech 2020 |
+| `metrics/utils/plo_plots.py` | privacy log-odds profiles | Nautsch et al., Interspeech 2020 |
+
+So the field has roughly **nine** privacy quantities, not five, and four of them
+are already installed alongside the systems being evaluated. **This comparison
+covers five of the nine.** Extending it to the rest is the obvious next step
+and is not done.
+
+Two consequences worth stating plainly rather than leaving implicit.
+
+**ZEBRA got to standardisation first.** It was offered in 2020 as "a candidate
+for incorporation into biometric information protection standards" **[P]**. Any
+proposal of ours in that direction completes that path rather than opening one,
+and should say so.
+
+**ZEBRA reports a population figure and a worst-case individual figure
+separately** **[P]**. An average that looks acceptable can conceal one fully
+exposed person. None of the metrics in the table below does this, ours included,
+and on reflection the split looks like a property a procedure should require
+rather than one metric's design choice.
 
 | Proposal | Unit | What it asks |
 |---|---|---|

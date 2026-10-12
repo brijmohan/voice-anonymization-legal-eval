@@ -115,6 +115,31 @@ points from them. Mean absolute difference 0.0007, worst 0.00509 **[M]**.
 
 ## 3. What we have established
 
+### 3.0 Our inventory of the field was incomplete
+
+**Correction, 12 October 2026.** This document and
+[`metric-comparison.md`](metric-comparison.md) described "four groups" proposing
+to replace the EER. Reading the installed VoicePrivacy 2026 checkout shows its
+evaluation code already ships four more privacy quantities: Cllr, the
+Gomez-Barrero `D_sys` linkability, and ZEBRA's population and worst-case
+disclosure with its privacy log-odds profiles **[M]**.
+
+So the field has about **nine** such quantities and our comparison covers five.
+ZEBRA (Nautsch et al., Interspeech 2020) was already offered as a candidate for
+incorporation into biometric information protection standards **[P]**, which
+means it reached the standardisation argument six years before we did.
+
+Two things follow for how we work.
+
+**Any standardisation proposal of ours completes ZEBRA's path rather than
+starting one**, and must say so, or it will be dismissed by the people best
+placed to dismiss it.
+
+**ZEBRA separates population disclosure from worst-case individual
+disclosure.** An average that looks acceptable can conceal one fully exposed
+person. None of our metrics does this and it looks like something a procedure
+should require. See `policy/standardisation-proposal.md`, which is private.
+
 ### 3.1 The metrics
 
 **SRD's identification rate is the Linkability metric.** Not approximately. At
