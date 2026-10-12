@@ -4,6 +4,8 @@ from legal_eval.metrics.eer import (
     one_minus_eer,
     roc_convex_hull,
     rocch_eer,
+    rocch_eer_standard_error,
+    standard_error_of_mean,
 )
 from legal_eval.metrics.linkability import (
     count_beaters,
@@ -25,6 +27,8 @@ __all__ = [
     "linkability",
     "linkability_naive",
     "one_minus_eer",
+    "rocch_eer_standard_error",
+    "standard_error_of_mean",
     "roc_convex_hull",
     "rocch_eer",
     "score_conversations",

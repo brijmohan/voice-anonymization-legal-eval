@@ -243,3 +243,84 @@ def test_the_eer_still_matches_the_closed_form_at_a_large_population():
     target = rng.normal(d, 1.0, n)
     nontarget = rng.normal(0.0, 1.0, n * 20)
     assert rocch_eer(target, nontarget) == pytest.approx(norm.cdf(-d / 2), abs=0.01)
+
+
+# The EER standard error, moved into the package so a protocol user can call it.
+
+def test_the_standard_error_resamples_trials_not_the_draw():
+    """Spread must come from the trials, which is the failure this replaces.
+
+    Taking spread from the candidate draw alone gave exactly zero at N equal
+    to the enrollment count, because the draw is then deterministic. That read
+    as precision and produced a false finding.
+    """
+    from legal_eval.metrics import rocch_eer_standard_error
+
+    rng = np.random.default_rng(0)
+    n_enroll, n_trials = 29, 400
+    scores = rng.normal(0, 1, (n_enroll, n_trials))
+    rows = rng.integers(0, n_enroll, n_trials)
+    scores[rows, np.arange(n_trials)] += 2.0
+
+    sem = rocch_eer_standard_error(scores, rows, n_reps=20, seed=0)
+    assert sem is not None
+    assert sem > 0.0, "a standard error of exactly zero is a bug, not precision"
+
+
+def test_the_standard_error_is_reproducible_from_its_seed():
+    from legal_eval.metrics import rocch_eer_standard_error
+
+    rng = np.random.default_rng(1)
+    scores = rng.normal(0, 1, (10, 60))
+    rows = rng.integers(0, 10, 60)
+    a = rocch_eer_standard_error(scores, rows, n_reps=8, seed=3)
+    b = rocch_eer_standard_error(scores, rows, n_reps=8, seed=3)
+    c = rocch_eer_standard_error(scores, rows, n_reps=8, seed=4)
+    assert a == b
+    assert a != c
+
+
+def test_fewer_than_two_replicates_has_no_standard_error():
+    """None rather than zero, so it cannot be mistaken for precision."""
+    from legal_eval.metrics import rocch_eer_standard_error
+
+    rng = np.random.default_rng(0)
+    scores = rng.normal(0, 1, (5, 20))
+    rows = rng.integers(0, 5, 20)
+    assert rocch_eer_standard_error(scores, rows, n_reps=1) is None
+
+
+@pytest.mark.parametrize("bad", ["shape", "rows", "index"])
+def test_the_standard_error_refuses_inconsistent_input(bad):
+    from legal_eval.metrics import rocch_eer_standard_error
+
+    rng = np.random.default_rng(0)
+    scores = rng.normal(0, 1, (5, 20))
+    rows = rng.integers(0, 5, 20)
+    if bad == "shape":
+        with pytest.raises(ValueError, match="2-D"):
+            rocch_eer_standard_error(rng.normal(0, 1, 20), rows)
+    elif bad == "rows":
+        with pytest.raises(ValueError, match="one entry per trial"):
+            rocch_eer_standard_error(scores, rows[:5])
+    else:
+        rows[0] = 99
+        with pytest.raises(ValueError, match="outside"):
+            rocch_eer_standard_error(scores, rows)
+
+
+def test_standard_error_of_mean_matches_the_textbook_formula():
+    from legal_eval.metrics import standard_error_of_mean
+
+    values = [0.1, 0.2, 0.3, 0.4]
+    expected = np.std(values, ddof=1) / np.sqrt(4)
+    assert standard_error_of_mean(values) == pytest.approx(expected)
+    assert standard_error_of_mean([0.5]) is None
+    assert standard_error_of_mean(None) is None
+
+
+def test_identical_replicates_give_exactly_zero_so_preflight_can_catch_it():
+    """The function must not hide the failure; preflight is what reports it."""
+    from legal_eval.metrics import standard_error_of_mean
+
+    assert standard_error_of_mean([0.3, 0.3, 0.3]) == 0.0

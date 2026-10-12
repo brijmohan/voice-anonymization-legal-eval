@@ -191,3 +191,94 @@ def one_minus_eer(target_scores: np.ndarray, nontarget_scores: np.ndarray) -> fl
     legal metrics, where a higher value means a higher re-identification risk.
     """
     return 1.0 - rocch_eer(target_scores, nontarget_scores)
+
+
+def standard_error_of_mean(values) -> float | None:
+    """Standard error of the mean over replicates, or None below two.
+
+    Two metrics whose means differ by less than their combined standard errors
+    have not been shown to differ, and at a metric's ceiling that is the usual
+    case. Reporting an ordering without this invites a conclusion the data does
+    not support.
+
+    A result of exactly ``0.0`` means the replicates were identical, which is
+    almost always a fault in how they were drawn rather than a precise
+    estimate. :func:`legal_eval.preflight.run_preflight` checks for it.
+
+    Args:
+        values: Replicate values, or None.
+
+    Returns:
+        The standard error, or None when there are fewer than two values.
+    """
+    if values is None:
+        return None
+    array = np.asarray(list(values), dtype=float)
+    if array.size < 2:
+        return None
+    return float(array.std(ddof=1) / np.sqrt(array.size))
+
+
+def rocch_eer_standard_error(
+    scores: np.ndarray,
+    true_rows: np.ndarray,
+    n_reps: int = 20,
+    seed: int = 0,
+) -> float | None:
+    """Standard error of the ROCCH-EER, by resampling trials.
+
+    The EER is almost always quoted as a single number, which makes it the one
+    metric in this package that cannot be compared against its own noise. Two
+    systems whose EERs differ by less than this have not been shown to differ.
+
+    **Trials are the unit of resampling.** Each replicate draws trial columns
+    with replacement, keeping a trial's mated score together with its nonmated
+    ones rather than breaking them apart. Resampling the candidate draw alone
+    is what produced a standard error of exactly zero and a false finding
+    earlier in this project.
+
+    Cost scales as the square of the population, because every replicate
+    re-sorts the whole score matrix. See `docs/protocol.md`.
+
+    Args:
+        scores: ``(n_enroll, n_trials)`` score matrix.
+        true_rows: ``(n_trials,)`` enrollment row holding each trial's true
+            speaker.
+        n_reps: Replicates. Below two the standard error is undefined.
+        seed: RNG seed, so a reported figure is reproducible.
+
+    Returns:
+        The standard error, or None when ``n_reps`` is below 2.
+
+    Raises:
+        ValueError: If the shapes disagree, or a row index is out of range.
+    """
+    scores = np.asarray(scores, dtype=np.float64)
+    true_rows = np.asarray(true_rows)
+    if scores.ndim != 2:
+        raise ValueError(f"scores must be 2-D, got shape {scores.shape}")
+    n_enroll, n_trials = scores.shape
+    if true_rows.shape != (n_trials,):
+        raise ValueError(
+            f"true_rows must have one entry per trial: expected {(n_trials,)}, "
+            f"got {true_rows.shape}"
+        )
+    if n_trials and (true_rows.min() < 0 or true_rows.max() >= n_enroll):
+        raise ValueError(
+            f"true_rows holds an index outside the {n_enroll} enrollment rows"
+        )
+    if n_reps < 2:
+        return None
+
+    rng = np.random.default_rng(seed)
+    columns = np.arange(n_trials)
+    values = []
+    for _ in range(n_reps):
+        pick = rng.integers(0, n_trials, size=n_trials)
+        sub = scores[:, pick]
+        sub_rows = true_rows[pick]
+        mated = sub[sub_rows, columns]
+        mask = np.ones_like(sub, dtype=bool)
+        mask[sub_rows, columns] = False
+        values.append(rocch_eer(mated, sub[mask]))
+    return standard_error_of_mean(values)

@@ -55,7 +55,11 @@ from legal_eval.embeddings import (  # noqa: E402
     build_test_embeddings,
 )
 from legal_eval.io import ScoreMatrix  # noqa: E402
-from legal_eval.metrics.eer import rocch_eer  # noqa: E402
+from legal_eval.metrics.eer import (  # noqa: E402
+    rocch_eer,  # noqa: E402
+    rocch_eer_standard_error,
+    standard_error_of_mean,
+)
 from legal_eval.metrics.linkability import linkability  # noqa: E402
 from legal_eval.scoring import cosine_score_matrix  # noqa: E402
 from legal_eval.sweeps import singling_out_sweep  # noqa: E402
@@ -66,39 +70,17 @@ N_DRAWS = 10
 
 
 def _bootstrap_eer_sem(scores, true_rows, n_reps: int = 20, seed: int = 0):
-    """Standard error of the ROCCH EER, by resampling trials with replacement.
+    """Kept as a name; the implementation now lives in the package.
 
-    Trials are the unit of resampling, so each replicate keeps a trial's mated
-    score with its nonmated ones rather than breaking them apart.
+    It moved so that somebody following docs/protocol.md can call it
+    rather than copy it out of an example.
     """
-    n_trials = scores.shape[1]
-    rng = np.random.default_rng(seed)
-    values = []
-    for _ in range(n_reps):
-        pick = rng.integers(0, n_trials, size=n_trials)
-        sub = scores[:, pick]
-        sub_rows = true_rows[pick]
-        mated = sub[sub_rows, np.arange(n_trials)]
-        mask = np.ones_like(sub, dtype=bool)
-        mask[sub_rows, np.arange(n_trials)] = False
-        values.append(rocch_eer(mated, sub[mask]))
-    return _sem_from(values)
+    return rocch_eer_standard_error(scores, true_rows, n_reps, seed)
 
 
 def _sem_from(values) -> float | None:
-    """Standard error of the mean over runs, or None when there is one run.
-
-    Two metrics whose means differ by less than their combined standard errors
-    have not been shown to differ, and at the ceiling that is the usual case.
-    Reporting an ordering without this invites a conclusion the data does not
-    support.
-    """
-    if values is None:
-        return None
-    array = np.asarray(list(values), dtype=float)
-    if array.size < 2:
-        return None
-    return float(array.std(ddof=1) / np.sqrt(array.size))
+    """Kept as a name; see legal_eval.metrics.standard_error_of_mean."""
+    return standard_error_of_mean(values)
 
 
 @dataclass
@@ -253,7 +235,7 @@ def across_population(
     # The EER is usually quoted as a single number, which makes it the only
     # metric here that cannot be compared against noise. Bootstrap over trials
     # so its ordering of two systems can be judged on the same footing.
-    eer_sem = _bootstrap_eer_sem(scores, rows)
+    eer_sem = rocch_eer_standard_error(scores, rows)
 
     sweep = singling_out_sweep(
         system.enroll_embeddings,
