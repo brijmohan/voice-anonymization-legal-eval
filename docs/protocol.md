@@ -98,33 +98,45 @@ For the newer proposals on the same artifact, see
 
 ## Cost, before you pick a population
 
-Singling Out is the expensive metric, and its cost is not what you would guess
-from the number you report. The sweep evaluates **every enrollment speaker**
-for every `N`, every run and every fold, so
+**The expensive part is not the metric you would guess, and it is worth saying
+how that was established: by attaching `py-spy` to the running process rather
+than by reasoning about the code** **[M]**. A cost model inferred from reading
+`singling_out_sweep` was wrong, and wrong by enough to have mispriced a run by
+a factor of ten.
+
+The dominant cost at a large population is the **EER standard error
+bootstrap**. It resamples trials 20 times, and each replicate copies the score
+matrix, builds a boolean mask of the same shape, extracts the non-mated scores
+into another array of nearly that size, then sorts them for the convex hull. On
+a 9,779 by 9,779 matrix that is roughly 1.6 GB of allocation and 95 million
+values sorted, per replicate, 20 replicates, **per system** **[M]**.
+
+Two consequences:
+
+- It is **O(N^2) in the population** and **independent of how many values of
+  `N` you sweep**. It is paid once per system whatever ladder you ask for.
+- It is single-threaded. The observed process sat at 101% CPU on a 12 core
+  machine **[M]**, so more cores do not help.
+
+Singling Out is the other cost, and that one does scale with the ladder:
 
     draws = enrollment speakers x runs x folds x number of N values
 
-At 9,779 enrollment speakers with three runs and three folds over nine values
-of `N`, that is **792,099 draws**, measured at **6.75 ms each**, so about 90
-minutes **[M]**. The process sits at 101% CPU, single-threaded: this is a
-Python loop, not a BLAS matmul, so more cores do not help and the work does not
-shard inside one process.
+which at 9,779 speakers with three runs and three folds over nine values of
+`N` is 792,099 draws **[M]**.
 
-The part to be careful about is how a draw scales with `N` itself. From one
-measured ladder you cannot separate fixed overhead from the `N`-proportional
-term, and the two give very different answers **[I]**:
+The practical consequences for anyone planning a run:
 
-| ladder | sum of N | if fixed-cost | if N-proportional |
-|---|---|---|---|
-| to 500 | 966 | 1.5 h | 1.5 h |
-| to 2,500 | 4,466 | 1.8 h | 6.9 h |
-| to 5,000 | 9,466 | 2.0 h | 14.6 h |
-| to 9,779 | 19,245 | 2.1 h | 29.6 h |
+1. **Sweep the whole ladder in one invocation.** Splitting it into stages pays
+   the EER bootstrap again in each stage, and that is the dominant term. A
+   two-stage plan written here paid it twice for nothing.
+2. **Price the population before the ladder.** Doubling `N` quadruples the
+   bootstrap. Adding four more values of `N` costs only more draws.
+3. **Measure, do not model.** Attach a sampling profiler to the running job.
+   The stack says in one line what an afternoon of reasoning got wrong.
 
-So **add large populations one at a time and measure**, rather than writing an
-ambitious ladder and starting it. Running a ladder you have not costed is how
-a day disappears. Reducing folds or runs cuts the cost proportionally but
-removes the spread, and a standard error of exactly zero is one of the things
+Reducing folds or runs cuts the Singling Out cost proportionally but removes
+the spread, and a standard error of exactly zero is one of the things
 `preflight` refuses.
 
 ## Step 5: report chance levels and bounds
