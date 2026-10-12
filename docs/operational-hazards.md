@@ -207,6 +207,25 @@ concurrent shard workers each ran that install and clobbered `env_sttts.sh`.
 **The habit.** `export NEW_INSTALL_TRIGGER=no` once installed, and warm up with
 a single worker before launching many.
 
+### Editing a shell script while it is running
+
+**What happened.** The finding driver was mid-run when its `python` invocation
+was patched to add `-u`, to fix the buffering hazard below. That edit changed
+the length of a line, which shifts every byte after it.
+
+Bash reads a script in chunks and keeps a byte offset into the file. If it
+re-reads after the offset has been invalidated, it can resume mid-token and
+execute something that was never written. The script here was 2 KB, small
+enough that bash had almost certainly read it whole, and the run continued
+normally. That is luck, not a method.
+
+**The habit.** Write the new version to a different filename and launch that.
+Never edit the file a running shell is reading, however small the change. The
+same applies to a config a long job re-reads between stages.
+
+This one was caught by noticing it rather than by anything failing, which is
+the weakest way to catch something.
+
 ### Buffered output makes a long job indistinguishable from a hung one
 
 **What happened.** Three times in one day, a job that was working looked dead.
