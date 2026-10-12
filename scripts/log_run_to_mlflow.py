@@ -14,7 +14,7 @@ governance.
 
 Usage::
 
-    python scripts/log_run_to_mlflow.py --results results/comparison/ignorant.json
+    python scripts/log_run_to_mlflow.py --results results/comparison/lazy_informed.json
     python scripts/log_run_to_mlflow.py --results ... --tracking-uri file:///path/mlruns
 """
 

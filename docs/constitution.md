@@ -58,6 +58,23 @@ axes this project reports. It is the regulatory basis for refusing to quote a
 privacy number without a population size and an attacker model, and it turns
 Finding 3.1's saturation result from an inconvenience into a compliance problem.
 
+### Our VPC setup, audited against the plan
+
+Checked against the VoicePrivacy 2026 evaluation plan, version 2.0:
+[`vpc-2026-conformance.md`](vpc-2026-conformance.md). The attacker
+architecture, the semi-informed condition and the mixed trial lists conform.
+Three things do not, and each bounds a claim:
+
+- Our attacker was **labelled ignorant and is lazy-informed** **[M]**. The
+  numbers are unchanged; what changes is that they come from a stronger
+  attacker than the label implied, and that the plan collects lazy-informed EER
+  for analysis rather than ranking. The ignorant condition has never been
+  computed here.
+- **B4, the neural audio codec baseline, was never run**, dropped at 188 days
+  projected **[M]**. "Across the VPC 2026 baselines" means three of four.
+- **IEMOCAP is excluded** and the two utility metrics are not run, so nothing
+  here speaks to the privacy and utility trade-off.
+
 ### What would falsify the project's premise
 
 If the EDPB criteria turned out to be measurable only under assumptions no real
@@ -221,7 +238,7 @@ false at this shape **[I]**.
 
 ### 3.7 The attacker we measure preprocesses one utterance two ways
 
-The 2026 challenge's ignorant attacker is `ecapa_ssl`: an ECAPA head over two
+The 2026 challenge's lazy-informed attacker is `ecapa_ssl`: an ECAPA head over two
 feature streams, a filterbank and WavLM-Large. Reading its extractor to drive
 it over Common Voice turned up something about how it is fed **[M]**.
 
@@ -402,7 +419,8 @@ speaker representation is sufficient. It is not.
 ### 4.2 Spectral envelope is not where identity lives
 
 The sharpest evidence we have. McAdams coefficient warping modifies the spectral
-envelope and nothing else. Against the ignorant attacker at `N = 29` **[M]**:
+envelope and nothing else. Against the lazy-informed attacker at `N = 29`
+**[M]**:
 
 | | Linkability | SRD MeanD | 1-EER |
 |---|---|---|---|

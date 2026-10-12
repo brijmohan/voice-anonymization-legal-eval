@@ -28,7 +28,14 @@ your chosen region, limit 1. Say it is for academic speech privacy research.
 
 While waiting, do everything in "Stage the data" below. None of it needs a GPU.
 
-## Start with the ignorant attacker
+## Start with the lazy-informed attacker
+
+`exp/asv_ssl` is what the VPC 2026 plan calls the **lazy-informed** attacker:
+it knows the anonymization system and anonymizes its own enrollment data, but
+is not retrained on anonymized speech. It is not the *ignorant* attacker, which
+would leave enrollment unanonymized, and which we have never computed. The plan
+collects lazy-informed EER "for post-evaluation analysis only", not for
+ranking. See [`vpc-2026-conformance.md`](vpc-2026-conformance.md).
 
 The expensive part of a VPC run is finetuning the attacker on anonymized
 `train-clean-360`. It is avoidable for a first result, and skipping it changes
@@ -57,7 +64,7 @@ from the `anon_level_*` lists. From the stock `eval_pre.yaml`, drop the
 ```sh
 python run_anonymization.py --config configs/track1/anon_asrbn_libri.yaml
 python run_evaluation.py --config configs/track1/eval_pre_privacy.yaml
-legal-eval vpc --results-dir exp/asv_ssl --output results/legal_asrbn_ignorant.csv
+legal-eval vpc --results-dir exp/asv_ssl --output results/legal_asrbn_lazy.csv
 ```
 
 Only once that produces sensible numbers is it worth running `eval_post.yaml`,

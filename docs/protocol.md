@@ -50,8 +50,10 @@ asking for exactly the two axes to report.
 At minimum, say:
 
 - what model produces the embeddings, and whether it saw anonymized speech
-- whether the attacker knows the anonymization system (ignorant,
-  lazy-informed, semi-informed)
+- whether the attacker knows the anonymization system, and whether it
+  anonymized its own enrollment data: ignorant does neither, lazy-informed
+  does both without retraining, semi-informed also retrains on anonymized
+  data. VPC 2026 specifies only the last two, and ranks on semi-informed
 - the operating point, where the metric needs one
 
 ## Step 3: check the anonymized audio is speech
