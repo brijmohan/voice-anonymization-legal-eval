@@ -59,6 +59,79 @@ python examples/04_compare_privacy_metrics.py --demo
 python examples/04_compare_privacy_metrics.py --results-dir exp/asv_ssl
 ```
 
+## Four axes, not nine metrics
+
+The most useful thing to come out of running these together is that the field's
+privacy quantities do not measure nine things. They sort by **what each one is
+averaged over**, and within a row they largely agree:
+
+| averaged over | metrics | status here |
+|---|---|---|
+| trials, as a distribution | ROCCH-EER, Cllr, Gomez-Barrero `D_sys`, ZEBRA `D_ECE` | implemented |
+| **the worst individual** | ZEBRA `max |LLR|` | implemented |
+| a candidate population of size `N`, by **rank** | Linkability, SRD, LID | implemented |
+| a candidate population of size `N`, by **threshold** | Singling Out | implemented |
+
+**Within the rank row the metrics are close to redundant.** On Common Voice,
+asked what fraction of the available room McAdams closed, Linkability, SRD
+MeanD and LID ALID agree to within 0.02 to 0.06, while Singling Out says about
+2.8 times as much and does so stably from `N = 5` to `N = 500` **[M]**. SRD's
+IdR is Linkability exactly **[M]**.
+
+The mechanism is that a rank survives any monotone squeeze of the scores and a
+threshold does not, so the compression that barely disturbs an ordering pushes
+many candidates across a fixed decision boundary.
+
+**The consequence for a procedure is to require one metric per axis**, rather
+than several from one. Reporting Linkability, SRD and LID together reads as
+triangulation and is closer to repetition. And the four axes map onto
+distinctions that already exist in law: Article 29 separates singling out from
+linkability, which is the threshold and rank rows, and the worst-individual row
+is the one a data protection authority asks about when it asks whether any
+individual is exposed.
+
+**The worst-individual axis has exactly one member, and it is not ours.** ZEBRA
+is the only quantity in the field that reports an individual rather than an
+average, and an average that looks acceptable can conceal one person about whom
+the evidence is overwhelming. That is the strongest single reason to build on
+ZEBRA rather than around it.
+
+## These three are the authors' metrics, not our reading of them
+
+Cllr, the Gomez-Barrero linkability and ZEBRA differ from SRD and LID in an
+important way: **reference implementations ship with the VoicePrivacy
+Challenge**, so they did not have to be taken from the papers.
+`legal_eval/trial_metrics.py` is implemented against that code and
+`scripts/verify_trial_metrics.py` checks it over 30 score sets spanning
+separable, overlapping, tied, bounded and skewed shapes **[M]**:
+
+| quantity | worst absolute difference |
+|---|---|
+| PAV | **0** |
+| optimal LLR | 1.776e-15 |
+| Cllr | 1.110e-16 |
+| minimum Cllr | 2.220e-16 |
+| Gomez-Barrero `D_sys` | **0** |
+| ZEBRA `D_ECE` | 3.247e-15 |
+| ZEBRA worst case | 4.441e-16 |
+| ZEBRA category tag | 30 of 30 agree |
+
+Two details worth carrying into any report.
+
+**ZEBRA's category tag is the answer to legibility.** It maps the worst-case
+figure onto the European Network of Forensic Science Institutes' scale for
+strength of evidence, so a result arrives as a category rather than only a
+decimal, and that scale already has forensic currency in Europe. Across three
+synthetic systems of increasing protection the tag moves C, B, A **[M]**. No
+new scale should be invented for this.
+
+**Cllr must be reported actual and minimum.** The gap between them is
+calibration loss, which belongs to the attacker rather than to the
+anonymization, so the actual figure alone flatters a system whose scores happen
+to be poorly calibrated. The actual figure can exceed 1 bit, which means
+treating raw cosine scores as log-likelihood ratios is worse than learning
+nothing **[M]**.
+
 ## Why published numbers cannot be compared directly
 
 The four proposals were evaluated on different corpora, with different attacker
