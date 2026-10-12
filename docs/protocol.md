@@ -40,6 +40,29 @@ the sampling. [`subset-design.md`](subset-design.md) has the argument;
 
 **Report `N`.** Everything downstream is a function of it.
 
+**Also evaluate the original, unprotected audio at the same `N`, and report it
+beside every result.** This is not a formality and it is the step most likely to
+be skipped.
+
+The attacker's score on the original audio is its actual ceiling on that task.
+Without it a reader cannot tell protection from difficulty. Measured on Common
+Voice, the same attacker scores 0.9131 on original audio at `N = 29` and 0.4515
+at `N = 9,779` **[M]**. At the first population it is pinned near the bound, so
+no system can be shown to differ from another. At the second it already fails on
+more than half the unprotected audio, so more than half of any privacy measured
+there is the task being hard.
+
+So the population is bounded on both sides, and a result is interpretable only
+in the window between. Reporting the original's value at each `N` makes that
+window visible without anyone having to agree a threshold for it. On this corpus
+and attacker the window is roughly `N = 50` to `250`; on yours it will differ,
+because it is a property of the attacker and the corpus rather than of the
+metric.
+
+This is the methodology point in Hanisch, Todt, Patino, Evans and Strufe,
+*A False Sense of Privacy* (PoPETs 2024), which should be read alongside this
+document.
+
 ## Step 2: state the attacker
 
 An attacker is a concrete system with stated knowledge, not an abstraction.

@@ -468,6 +468,61 @@ evidence about the regime it was written for.** Anyone adopting this harness at
 a population of thousands should expect to find more of these, and that is a
 reason to publish it rather than a reason not to.
 
+### 3.12 The population has a usable window, and "bigger is better" was wrong
+
+This corrects a position held in this document until today.
+
+We argued that the field's populations are too small, because at `N = 29` four
+of six conditions sit against their metric's bound and a saturated metric cannot
+distinguish two systems **[M]**. That is true. We inferred that larger is
+better, and built Common Voice subsets at 10,000 speakers on that basis.
+
+Hanisch, Todt, Patino, Evans and Strufe (*A False Sense of Privacy*, PoPETs
+2024) argue the opposite direction, that evaluation overestimates privacy
+because it assumes "a difficult recognition scenario and thus a weak
+adversary", and among their recommendations is **reducing** the number of
+identities while keeping them clearly distinguishable **[P]**.
+
+Our own data settles it, and neither of us was wholly right. These are the
+measured Linkability values on **original, unanonymized** Common Voice audio
+against the lazy-informed attacker **[M]**:
+
+| N | Linkability on original audio | |
+|---|---|---|
+| 29 | 0.9131 | pinned near the bound |
+| 50 | 0.8836 | |
+| 100 | 0.8408 | |
+| 250 | 0.7725 | |
+| 500 | 0.7165 | |
+| 9,779 | 0.4515 | attacker already fails 55% of the time |
+
+At `N = 29` the original is pinned, so no system can be shown to differ from
+another. At `N = 9,779` the attacker fails on more than half of the original,
+unprotected audio, so **more than half of any privacy measured there is the
+task being hard rather than the anonymization working**. That is exactly the
+confound Hanisch et al. name, confirmed on our own corpus.
+
+**So the population is bounded on both sides and the answer to RQ3 is a window.**
+Flagging the original above 0.90 as saturated and below 0.75 as confounded puts
+it at roughly `N = 50` to `250` here **[I]**, though those two thresholds are a
+choice of ours and not derived.
+
+**The threshold-free version is the one to standardise.** Report three numbers
+at each population: the chance level, the anonymized system's value, and **the
+same attacker's value on the original audio**. The third is the attacker's
+actual ceiling on that task, and without it a reader cannot tell protection from
+difficulty. With it, no window needs defining, because the room available is
+visible. This is now a requirement in
+[`protocol.md`](protocol.md).
+
+Two things this costs us. Our Common Voice subsets at 10,000 speakers are
+larger than the useful range, so the headline population for a comparison
+should be in the hundreds and the large-`N` points serve to locate the confound
+rather than to measure systems. And a stronger attacker moves the window: the
+semi-informed attacker would be more accurate on the original at a given `N`,
+pushing the confounded boundary outward. The window is a property of the
+attacker and the corpus, not of the metric **[I]**.
+
 ---
 
 ## 4. Where identity actually leaks
