@@ -63,6 +63,12 @@ from legal_eval.metrics.eer import (  # noqa: E402
 from legal_eval.metrics.linkability import linkability  # noqa: E402
 from legal_eval.scoring import cosine_score_matrix  # noqa: E402
 from legal_eval.sweeps import singling_out_sweep  # noqa: E402
+from legal_eval.trial_metrics import (  # noqa: E402
+    cllr,
+    gomez_barrero_linkability,
+    min_cllr,
+    zebra,
+)
 
 COUNTS = (2, 5, 10, 20, 50)
 SLOPES = (0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0)
@@ -265,10 +271,48 @@ def across_population(
     iso_mean = sweep.mean()
     iso_values = sweep.values
 
+    # Cllr, the Gomez-Barrero linkability and ZEBRA are functionals of the two
+    # score distributions, with no population axis, so they belong beside the
+    # EER rather than in the per-N table. Implemented against the challenge's
+    # own reference code and verified against it to 3e-15 or better, so these
+    # are the authors' metrics rather than our reading of their papers.
+    # The actual Cllr is computed on the RAW scores, as the reference does,
+    # treating them as if they were log-likelihood ratios. Computing it on
+    # calibrated scores instead makes it equal the minimum by construction,
+    # which is how this was wired at first and it made "actual" meaningless.
+    # The gap between the two is calibration loss, which belongs to the
+    # attacker and is not a property of the anonymization, so a system whose
+    # scores happen to be badly calibrated is flattered by the actual figure
+    # alone.
+    try:
+        cllr_act = cllr(mated, nonmated)
+    except ValueError as exc:
+        cllr_act = float("nan")
+        print(f"  actual Cllr unavailable: {exc}")
+    cllr_min = min_cllr(mated, nonmated)
+    try:
+        dsys = gomez_barrero_linkability(mated, nonmated)
+    except ValueError as exc:            # too few mated scores to histogram
+        dsys = float("nan")
+        print(f"  Gomez-Barrero D_sys unavailable: {exc}")
+    z = zebra(mated, nonmated)
+
     print(f"\n=== {system.name} ===")
     print(
         f"ROCCH EER {eer:.4f}   1-EER {1 - eer:.4f}   "
         f"LID calibration slope w {slope:.3f}"
+    )
+    print(
+        f"No population axis: Cllr {cllr_act:.4f} act / {cllr_min:.4f} min "
+        f"(1.000 is an attacker that learned nothing; the gap is "
+        f"calibration loss, which is the attacker's to fix), "
+        f"Gomez-Barrero D_sys {dsys:.4f}"
+    )
+    print(
+        f"ZEBRA population {z.population:.4f} bits, worst individual "
+        f"{z.worst_case:.4f} base-10 LLR, category {z.tag} "
+        f"(0 is perfect privacy). The worst case is the only figure here "
+        f"about one person rather than an average."
     )
     if separable:
         print(
@@ -342,6 +386,13 @@ def across_population(
         "eer_sem": eer_sem,
         "one_minus_eer": 1 - eer,
         "slope": slope,
+        # No population axis: functionals of the two score distributions.
+        "cllr_actual": cllr_act,
+        "cllr_min": cllr_min,
+        "gomez_barrero_dsys": dsys,
+        "zebra_population": z.population,
+        "zebra_worst_case": z.worst_case,
+        "zebra_tag": z.tag,
         "by_n": out,
     }
 

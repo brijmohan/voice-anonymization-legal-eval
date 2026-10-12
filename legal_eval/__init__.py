@@ -95,12 +95,30 @@ from legal_eval.sweeps import (
     linkability_sweep,
     singling_out_sweep,
 )
+from legal_eval.trial_metrics import (
+    ZebraProfile,
+    category_tag,
+    cllr,
+    gomez_barrero_linkability,
+    min_cllr,
+    optimal_llr,
+    pav,
+    zebra,
+)
 from legal_eval.vpc import (
     benchmark_vpc_run,
     load_vpc_embeddings,
 )
 
 __all__ = [
+    "ZebraProfile",
+    "category_tag",
+    "cllr",
+    "gomez_barrero_linkability",
+    "min_cllr",
+    "optimal_llr",
+    "pav",
+    "zebra",
     "AudioIntegrity",
     "active_fraction",
     "check_anonymized",
