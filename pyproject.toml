@@ -46,6 +46,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Reading audio files, for checking that an anonymization system emitted
+# speech rather than silence. The metrics themselves never read audio.
+audio = ["soundfile>=0.12"]
 # Reading the HDF5 x-vector files the extraction toolkits write.
 hdf5 = ["h5py>=3.1"]
 plot = ["matplotlib>=3.4"]
@@ -53,11 +56,12 @@ progress = ["tqdm>=4.62"]
 # Reading VoicePrivacy Challenge embedding caches, which are torch tensors.
 # Always present in a VPC environment, so this is only for use outside one.
 vpc = ["torch>=1.9"]
-all = ["h5py>=3.1", "matplotlib>=3.4", "tqdm>=4.62"]
+all = ["h5py>=3.1", "matplotlib>=3.4", "tqdm>=4.62", "soundfile>=0.12"]
 dev = [
     "h5py>=3.1",
     "matplotlib>=3.4",
     "tqdm>=4.62",
+    "soundfile>=0.12",
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.4",

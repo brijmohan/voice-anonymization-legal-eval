@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+**New: `legal_eval.criteria` and `scripts/report_criteria_split.py`, the three
+Article 29 criteria on one scale.** The nine privacy quantities in use are not
+commensurable, so a table of raw readings invites the comparison it cannot
+support. Every metric is converted to its distance above its own chance level,
+oriented so larger always means more disclosure, and a system is scored on the
+fraction of the original recordings' distance it removes. The mapping from
+metric to criterion is stated rather than assumed: six quantities speak to
+linkability, one to singling out, and exactly one to inference, which is the
+finding. The room is reported next to every ratio, and a room below 0.05 is
+marked unreadable and kept out of the summaries, because the Singling Out room
+collapses to 0.0247 at N=9779.
+
 **New: `legal-eval preflight`, the hazards as checks.** Every failure recorded
 in [`docs/operational-hazards.md`](docs/operational-hazards.md) produced a
 plausible number rather than an error, and three of them were written down as
