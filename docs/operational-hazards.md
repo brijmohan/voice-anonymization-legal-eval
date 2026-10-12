@@ -171,14 +171,38 @@ killed the SSH session carrying it, producing three `ssh exited with return code
 [255]` failures that looked like a network outage while the workstation was
 `RUNNING` and reachable.
 
-**The habit.** Bracket one character so the pattern cannot match itself:
+**Fourth occurrence, and it finally settles which fix to use: the pid file.**
+
+Asking "is `shard_extract.sh` running?" before editing it took three attempts,
+each failing differently:
 
 ```sh
-pgrep -f "anon_sttts_cv2[7]"
-pkill -TERM -f "anon_sttts_cv2[7]"
+pgrep -f "shard_extract"        # matched this command's own line
+pgrep -f "shard_extrac[t]"      # still matched: the command line names the
+                                # script elsewhere, in the edit it performs
+pgrep -f ... | grep -v "^$$\$"   # $$ was expanded by the LOCAL shell before
+                                # the string ever reached the remote one
 ```
 
-Or use a pid file, which is what the long runs here do.
+All three were false positives, and all three refused a safe edit. The pid file
+worked first time:
+
+```sh
+pid=$(cat logs/thing.pid 2>/dev/null || true)
+if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then echo running; fi
+```
+
+**The habit.** Use a pid file. Bracketing one character is a weaker fix with
+its own two failure modes, shown above: it does nothing when the command line
+mentions the target elsewhere, which a script that edits a file named after the
+process always does, and a self-excluding `$$` is expanded on the wrong side of
+a transport boundary. Bracketing is still worth it for a one-off interactive
+check where neither applies.
+
+```sh
+pgrep -f "anon_sttts_cv2[7]"    # acceptable interactively
+pkill -TERM -f "anon_sttts_cv2[7]"
+```
 
 ### Nested heredocs and `$` expansion
 
