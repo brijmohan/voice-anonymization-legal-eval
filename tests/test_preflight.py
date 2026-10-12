@@ -295,7 +295,8 @@ def test_run_preflight_returns_one_result_per_check():
     assert [r.name for r in results] == [
         "population_recorded", "exclusions_declared", "no_zero_standard_error",
         "saturation_declared", "srd_idr_matches_linkability",
-        "lid_calibration_recorded", "metric_directions",
+        "lid_calibration_recorded", "worst_case_reported",
+        "cllr_calibration_reported", "metric_directions",
     ]
 
 
@@ -490,3 +491,81 @@ def test_a_table_row_ends_the_preceding_paragraph():
     found = unmarked_claims(text)
     assert len(found) == 1
     assert found[0][0] == 4
+
+
+# ZEBRA's second figure. An average can conceal one fully exposed person.
+
+def sys_report(**fields):
+    return {"systems": {"s": {"by_n": [{"n": 29}], **fields}}}
+
+
+def test_a_population_figure_without_the_worst_case_fails():
+    """Dropping the worst case drops the half that ZEBRA added."""
+    from legal_eval.preflight import check_worst_case_reported
+
+    result = check_worst_case_reported(sys_report(zebra_population=0.25))
+    assert result.status == "fail"
+    assert "no worst-case individual figure" in result.detail
+
+
+def test_both_zebra_figures_pass():
+    from legal_eval.preflight import check_worst_case_reported
+
+    result = check_worst_case_reported(
+        sys_report(zebra_population=0.25, zebra_worst_case=1.5)
+    )
+    assert result.status == "pass"
+
+
+def test_no_zebra_at_all_is_skipped():
+    from legal_eval.preflight import check_worst_case_reported
+
+    assert check_worst_case_reported(sys_report()).status == "skip"
+
+
+def test_a_worst_case_of_zero_still_counts_as_reported():
+    """Zero is the value for perfect privacy, not a missing field."""
+    from legal_eval.preflight import check_worst_case_reported
+
+    result = check_worst_case_reported(
+        sys_report(zebra_population=0.0, zebra_worst_case=0.0)
+    )
+    assert result.status == "pass"
+
+
+# Cllr actual and minimum, so calibration loss is visible.
+
+def test_cllr_actual_without_minimum_fails():
+    from legal_eval.preflight import check_cllr_calibration_reported
+
+    result = check_cllr_calibration_reported(sys_report(cllr_actual=0.9))
+    assert result.status == "fail"
+    assert "not both" in result.detail
+
+
+def test_cllr_minimum_without_actual_also_fails():
+    """Reporting only the minimum hides that the attacker as configured did worse."""
+    from legal_eval.preflight import check_cllr_calibration_reported
+
+    assert check_cllr_calibration_reported(
+        sys_report(cllr_min=0.5)
+    ).status == "fail"
+
+
+def test_both_cllr_figures_pass():
+    from legal_eval.preflight import check_cllr_calibration_reported
+
+    result = check_cllr_calibration_reported(
+        sys_report(cllr_actual=0.9, cllr_min=0.5)
+    )
+    assert result.status == "pass"
+
+
+def test_an_actual_cllr_above_one_bit_is_still_valid():
+    """Treating raw cosine scores as LLRs is worse than learning nothing."""
+    from legal_eval.preflight import check_cllr_calibration_reported
+
+    result = check_cllr_calibration_reported(
+        sys_report(cllr_actual=1.0209, cllr_min=0.9918)
+    )
+    assert result.status == "pass"

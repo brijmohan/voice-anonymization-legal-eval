@@ -213,7 +213,7 @@ number.
 legal-eval preflight results.json
 ```
 
-Seven checks, each naming the failure it guards against. None of those failures
+Nine checks, each naming the failure it guards against. None of those failures
 raised an error when they happened: they all produced a plausible number. Full
 list in [`operational-hazards.md`](operational-hazards.md).
 

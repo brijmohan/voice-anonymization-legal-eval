@@ -258,6 +258,8 @@ number:
 | `saturation_declared` | A metric at its ceiling cannot separate systems |
 | `srd_idr_matches_linkability` | They are the same quantity, not two metrics agreeing |
 | `lid_calibration_recorded` | Only the fitted slope reaches the result, so LID without it cannot be reproduced |
+| `worst_case_reported` | An average disclosure can conceal one fully exposed individual |
+| `cllr_calibration_reported` | The gap between actual and minimum Cllr is the attacker's calibration loss, not the system's privacy |
 | `metric_directions` | How a coarsening gets misread as an inversion |
 
 Two of these corrected themselves when first run over this project's own

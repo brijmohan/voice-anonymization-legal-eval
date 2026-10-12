@@ -464,6 +464,88 @@ def check_exclusions_declared(report: dict[str, Any]) -> CheckResult:
     )
 
 
+def check_worst_case_reported(report: dict[str, Any]) -> CheckResult:
+    """A population average must not be reported without the worst individual.
+
+    This is the whole design of ZEBRA. An average disclosure that looks
+    acceptable can conceal one person about whom the evidence is overwhelming,
+    and ZEBRA's second figure is the only quantity in the field that reports an
+    individual rather than an average.
+
+    So a report carrying `zebra_population` and not `zebra_worst_case` has
+    dropped precisely the half that cannot be recovered from the other. A data
+    protection authority asking whether any individual is exposed is asking for
+    the second number.
+    """
+    hazard = ("an average disclosure can conceal one fully exposed "
+              "individual, which is the half ZEBRA added")
+    systems = report.get("systems") or {}
+    if isinstance(systems, list):
+        systems = {str(i): s for i, s in enumerate(systems)}
+    have_population, missing_worst = [], []
+    for name, body in systems.items():
+        if not isinstance(body, dict):
+            continue
+        if isinstance(body.get("zebra_population"), (int, float)):
+            have_population.append(name)
+            if not isinstance(body.get("zebra_worst_case"), (int, float)):
+                missing_worst.append(name)
+    if not have_population:
+        return CheckResult("worst_case_reported", "skip",
+                           "no population disclosure figure in this report",
+                           hazard)
+    if missing_worst:
+        return CheckResult(
+            "worst_case_reported", "fail",
+            f"{len(missing_worst)} system(s) report a population disclosure "
+            f"with no worst-case individual figure, e.g. {missing_worst[0]!r}",
+            hazard,
+        )
+    return CheckResult("worst_case_reported", "pass",
+                       f"all {len(have_population)} system(s) report both the "
+                       f"population and the worst individual", hazard)
+
+
+def check_cllr_calibration_reported(report: dict[str, Any]) -> CheckResult:
+    """Cllr must be reported actual and minimum, so the gap is visible.
+
+    The gap between them is calibration loss, which belongs to whoever set the
+    attacker's scores rather than to the anonymization. Reporting the actual
+    figure alone therefore flatters a system whose scores happen to be poorly
+    calibrated, and reporting the minimum alone hides that the attacker as
+    actually configured did worse.
+    """
+    hazard = ("the gap between actual and minimum Cllr is calibration loss, "
+              "which belongs to the attacker and not to the anonymization")
+    systems = report.get("systems") or {}
+    if isinstance(systems, list):
+        systems = {str(i): s for i, s in enumerate(systems)}
+    partial = []
+    both = 0
+    for name, body in systems.items():
+        if not isinstance(body, dict):
+            continue
+        has_actual = isinstance(body.get("cllr_actual"), (int, float))
+        has_min = isinstance(body.get("cllr_min"), (int, float))
+        if has_actual and has_min:
+            both += 1
+        elif has_actual or has_min:
+            partial.append(name)
+    if not both and not partial:
+        return CheckResult("cllr_calibration_reported", "skip",
+                           "no Cllr in this report", hazard)
+    if partial:
+        return CheckResult(
+            "cllr_calibration_reported", "fail",
+            f"{len(partial)} system(s) report one of actual and minimum Cllr "
+            f"but not both, e.g. {partial[0]!r}, so the calibration loss is "
+            f"not visible", hazard,
+        )
+    return CheckResult("cllr_calibration_reported", "pass",
+                       f"all {both} system(s) report both actual and minimum "
+                       f"Cllr", hazard)
+
+
 #: Every check, in the order they are reported.
 CHECKS = (
     check_population_recorded,
@@ -472,6 +554,8 @@ CHECKS = (
     check_saturation_declared,
     check_srd_idr_matches_linkability,
     check_lid_calibration_recorded,
+    check_worst_case_reported,
+    check_cllr_calibration_reported,
     check_metric_directions,
 )
 
