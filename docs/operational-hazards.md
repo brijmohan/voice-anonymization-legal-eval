@@ -218,6 +218,10 @@ project that worked first time used that pattern.
 **What happened.** Adding `set -u` to a runner aborted immediately, because
 VPC's `env.sh` dereferences `LD_LIBRARY_PATH` before setting it.
 
+**Recurred** on the ASR-BN CV27 launcher, on `MAMBA_ROOT_PREFIX` rather than
+`LD_LIBRARY_PATH`. The variable changes; the rule does not. The wrapper aborted
+before it reached the GPU, so the first reading was that the config was wrong.
+
 **The habit.** `set -e` only when sourcing third-party shell. Their
 `run_baseline.sh` does the same, for the same reason.
 
@@ -329,6 +333,35 @@ export LD_LIBRARY_PATH=/var/lib/nvidia/lib64:$LD_LIBRARY_PATH
 
 A GPU reading that says "not found" is a broken command until proven
 otherwise. Never report it as an idle or absent GPU.
+
+### Torch reports no NVIDIA driver when the venv interpreter is called directly
+
+**What happened.** The ASR-BN launcher called `venv/bin/python3` instead of
+sourcing `env.sh` first, on the reasoning that naming the interpreter is more
+explicit than relying on an activated environment. It is more explicit, and it
+is wrong: `env.sh` is also what puts the CUDA libraries on
+`LD_LIBRARY_PATH`. Torch then found no driver and said so:
+
+```
+RuntimeError: Found no NVIDIA driver on your system. Please check that you
+have an NVIDIA GPU and installed a driver from ...
+```
+
+on a workstation holding an idle A100 that `nvidia-smi` reports correctly from
+a sourced shell. The message names the one thing that is not the problem.
+
+**The habit.** Source `env.sh` and then call `python`. Prove the environment
+before the work starts, in the launcher itself, so a failure names its own
+cause:
+
+```sh
+source $R/env.sh
+python -c "import torch; print('cuda', torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+```
+
+This is the `nvidia-smi` hazard above wearing a different message, and that is
+the point: the symptom is reported by whichever tool asks for the GPU first, so
+it will not be recognisable from the error text next time either.
 
 ### One worker and many workers are different code paths
 
