@@ -301,6 +301,96 @@ should cancel. Neither has been checked.
 
 ---
 
+## Review, 12 October 2026: do these questions need revising?
+
+The first full comparison has run. This is the review that follows it, kept
+here rather than in a separate note so the questions and their revisions stay
+together.
+
+**Two revisions, one addition, one warning, three unchanged.**
+
+### RQ1 succeeded, and its successor is a different question
+
+RQ1 asked whether the metrics measure the same thing. It got a real answer, in
+three parts **[M]**: they agree on the **ordering** with zero inversions, their
+**magnitudes** differ by 10 to 40 standard errors so they are not
+interchangeable, and their **resolving power** differs, with Linkability and
+SRD separating 6 of 6 system pairs where the EER and Singling Out separate 4.
+
+So the question worked and is largely closed on this corpus. But notice that
+the binary framing, "the same thing or not", is not where the answer lives. The
+question a standard actually needs is:
+
+> **RQ1'. Which metrics must a procedure require, and over what population
+> range is each one valid?**
+
+That is not a restatement. RQ1 could be answered by a table of correlations;
+RQ1' cannot, because it needs the usable range per metric, which is what 3.14
+showed is the thing that bites. Treat RQ1 as answered and RQ1' as the live
+question.
+
+### RQ3 is answered further than expected, and should narrow
+
+RQ3 asked what population and attacker a defensible claim requires. It
+corrected us twice: the population is bounded **below** by saturation and
+**above** by task-difficulty confounding, and the bounds **differ per metric**,
+with Singling Out's room collapsing 21-fold across the range while
+Linkability's grows **[M]**.
+
+What remains open is one axis only, and we already have the models for it:
+
+> **RQ3'. How does the usable population window move with attacker strength?**
+
+Everything measured so far is the lazy-informed attacker. The semi-informed
+models are trained for all three LibriSpeech systems and have never been used
+for the comparison. A stronger attacker raises the original's score, which
+pushes the confounding boundary outward, so the window should widen. That is a
+cheap and falsifiable prediction **[?]**.
+
+### A new question the work produced
+
+> **RQ7. Does a defensible anonymity claim require an individual-level
+> disclosure figure, or does a population average suffice?**
+
+Article 29's three criteria are all about what can be done to *a* person, but
+every metric this project implemented reports a population average. ZEBRA's
+worst-case figure is the only quantity in the field that reports an individual
+**[M]**, and CNIL obligation G3, that pseudo-identities must not identify a
+real person, is adjacent to it without naming it.
+
+This matters because an average that looks acceptable can conceal one fully
+exposed person, and because the answer determines whether a standard must
+require two figures per metric rather than one. It is also the axis we do not
+occupy, which is the strongest reason to approach ZEBRA's authors as
+collaborators.
+
+### A warning, not a revision
+
+**RQ5, the shelf life of a demonstration, has had no work at all.** It is the
+only one of the six in that position, and it is the one with a regulator
+explicitly asking for it, through CNIL G4's requirement to keep the
+demonstration at the state of the art.
+
+It is also the question most likely to be deferred indefinitely, because it
+needs a longitudinal measurement that no single run produces. Recording that
+here so the deferral is a decision rather than a drift.
+
+### Unchanged: RQ2, RQ4, RQ6
+
+RQ2 and RQ4 stand as written and both advanced.
+
+RQ6 stands as written and deserves a note. **It was the most productive
+question of the programme**, and it is the one that looked most like
+methodological housekeeping. Most of what was learned came from it: a destroyed
+utterance scoring as perfect privacy, our own implementation not scaling to the
+population the question required, extraction shards becoming twelve fictitious
+systems, and a metric read outside its usable range certifying a system as
+anonymous.
+
+The lesson generalises past this project. **The question about whether the
+instrument works outproduced the questions about what the instrument measures**,
+and it would have been the easiest one to postpone.
+
 ## What would falsify the programme
 
 Stated here because a set of research questions with no failure condition is a
