@@ -192,6 +192,21 @@ enrollment count the closed-set draw is deterministic, so spread taken from it
 alone is exactly zero. That reads as precision and it is a bug. It produced a
 false claim in this project before it was caught.
 
+## Step 6b: produce the three-point report
+
+```sh
+python scripts/report_three_point.py results.json --original "my corpus original"
+```
+
+It prints, per population: the chance level, the attacker's score on the
+original audio, the anonymized system's score, the **room** between chance and
+the original, and the fraction of that room the system **closed**.
+
+`closed` is the figure to compare across metrics, because it is the only one
+normalised by what was achievable rather than by a bound nothing can reach. It
+also flags the rows where the population rather than the system is deciding the
+number.
+
 ## Step 7: run the checks
 
 ```sh
