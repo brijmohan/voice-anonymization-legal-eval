@@ -398,6 +398,51 @@ not establish that a system which defeated verification would also defeat
 gender inference. That is the interesting open question and the right next
 experiment is the ASR-BN condition, which moves Linkability to 0.386 **[?]**.
 
+### 3.11 The reference implementation did not scale to the question we are asking
+
+A comparison at 9,779 enrollment speakers was abandoned after **four hours and
+twenty minutes**, still inside the first system's EER bootstrap **[M]**. A
+sampling profiler attached to the running process gave the reason in one stack:
+
+```
+_cross (legal_eval/metrics/eer.py:100)
+_lower_left_hull (legal_eval/metrics/eer.py:90)
+roc_convex_hull (legal_eval/metrics/eer.py:74)
+_bootstrap_eer_sem (04_compare_privacy_metrics.py:84)
+```
+
+`_lower_left_hull` was a Python loop over every ROC point. At the paper's
+evaluation sets that is 43,500 points and it is instant. At 9,779 speakers
+scored against themselves it is **95.6 million points**, walked 21 times per
+system for the metric plus its 20 replicate bootstrap.
+
+**The fix is a reduction, not an approximation.** Stepping the threshold past a
+nontarget moves `pfa` and leaves `pmiss` alone, and past a target does the
+reverse, so a run of equal labels traces a straight line and every point
+strictly inside a run is collinear with its neighbours. Collinear points are
+never hull vertices. Dropping them first bounds the hull input by the target
+count rather than the nontarget count: about 19,559 points instead of 95.6
+million.
+
+Verified to return the **identical hull vertices**, not merely the same EER, on
+400 random cases including heavy ties **[M]**, and the paper's published values
+still reproduce **[M]**. Measured 11 to 14 times faster from 40,000 to 4 million
+points **[M]**; at 95.6 million the old path also degraded superlinearly from
+memory pressure, so the true factor there is larger.
+
+**Why this belongs in a document about findings rather than a changelog.** The
+defect was invisible for as long as the project only asked questions at the
+population the paper used. It appeared the moment we asked RQ3, which is the
+question about whether a small population can support a claim at all. An
+implementation written against a 29-speaker evaluation set encodes the
+assumption that 29 is the right scale, and that assumption was load-bearing
+without being stated anywhere.
+
+So the lesson generalises past this function: **a reference implementation is
+evidence about the regime it was written for.** Anyone adopting this harness at
+a population of thousands should expect to find more of these, and that is a
+reason to publish it rather than a reason not to.
+
 ---
 
 ## 4. Where identity actually leaks

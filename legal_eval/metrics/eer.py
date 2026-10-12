@@ -71,8 +71,61 @@ def roc_convex_hull(
 
     # Points come out with pfa decreasing; reverse so pfa increases.
     points = np.column_stack([pfa[::-1], pmiss[::-1]])
-    hull = _lower_left_hull(points)
+    hull = _lower_left_hull(_staircase_vertices(is_target[::-1], points))
     return hull[:, 0], hull[:, 1]
+
+
+def _staircase_vertices(
+    is_target_reversed: np.ndarray, points: np.ndarray
+) -> np.ndarray:
+    """Drop the ROC points that lie inside a straight segment.
+
+    Stepping the threshold past a nontarget moves ``pfa`` and leaves ``pmiss``
+    alone; stepping past a target does the reverse. So a run of equal labels
+    traces a straight line, and every point strictly inside such a run is
+    collinear with its neighbours. Collinear points are never hull vertices,
+    because the monotone chain pops on a cross product of zero, so removing
+    them first cannot change the hull.
+
+    It changes the cost enormously. The full point set has
+    ``n_target + n_nontarget + 1`` rows, which for a population of 9,779
+    speakers scored against itself is about 95.6 million. The number of label
+    runs is at most ``2 * n_target + 1``, about 19,559 for the same case, so
+    this is close to a five thousandfold reduction in what the Python hull loop
+    has to walk.
+
+    Without it, one EER on that matrix takes minutes and the twenty replicate
+    bootstrap behind its standard error takes hours. A run at 9,779 speakers
+    was abandoned after four hours inside this loop, which is how the problem
+    was found: the reference implementation was written against the paper's
+    29-speaker evaluation sets, where the point set is 43,500 rows and the
+    difference does not show.
+
+    Args:
+        is_target_reversed: Sorted target mask, reversed to match ``points``.
+        points: ``(n, 2)`` array of ``(pfa, pmiss)``, pfa increasing.
+
+    Returns:
+        The subset of ``points`` at run boundaries, always including the first
+        and last row.
+    """
+    n = points.shape[0]
+    if n <= 3:
+        return points
+
+    # points has one more row than the mask: row i is the operating point
+    # reached after stepping past i sorted scores. A run boundary in the mask
+    # therefore bounds a straight segment in points.
+    labels = np.asarray(is_target_reversed, dtype=bool)
+    keep = np.zeros(n, dtype=bool)
+    keep[0] = True
+    keep[-1] = True
+    if labels.size:
+        changes = np.flatnonzero(labels[1:] != labels[:-1]) + 1
+        # Keep the point on each side of every transition.
+        keep[changes] = True
+        keep[np.minimum(changes + 1, n - 1)] = True
+    return points[keep]
 
 
 def _lower_left_hull(points: np.ndarray) -> np.ndarray:

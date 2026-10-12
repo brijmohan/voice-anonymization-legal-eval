@@ -129,3 +129,117 @@ def test_rejects_empty_and_non_finite_input():
         rocch_eer(np.array([]), np.array([1.0]))
     with pytest.raises(ValueError):
         rocch_eer(np.array([np.nan]), np.array([1.0]))
+
+
+# The staircase reduction. Added after a run at 9,779 speakers was abandoned
+# after four hours inside the Python hull loop.
+
+def _hull_over_every_roc_point(target, nontarget):
+    """The behaviour before the reduction: hull over the full point set.
+
+    Kept here as the oracle. The reduction is only legitimate if it returns
+    exactly this, because the EER it feeds is a published number.
+    """
+    from legal_eval.metrics.eer import _lower_left_hull
+
+    target = np.asarray(target, dtype=np.float64).ravel()
+    nontarget = np.asarray(nontarget, dtype=np.float64).ravel()
+    n_target, n_nontarget = target.size, nontarget.size
+    scores = np.concatenate([target, nontarget])
+    is_target = np.concatenate(
+        [np.ones(n_target, dtype=bool), np.zeros(n_nontarget, dtype=bool)]
+    )
+    order = np.argsort(scores, kind="mergesort")
+    is_target = is_target[order]
+    cumulative_targets = np.concatenate([[0], np.cumsum(is_target)])
+    cumulative_nontargets = np.concatenate([[0], np.cumsum(~is_target)])
+    points = np.column_stack([
+        ((n_nontarget - cumulative_nontargets) / n_nontarget)[::-1],
+        (cumulative_targets / n_target)[::-1],
+    ])
+    return _lower_left_hull(points)
+
+
+@pytest.mark.parametrize("seed", range(12))
+def test_the_staircase_reduction_returns_the_identical_hull(seed):
+    """Not merely the same EER: the same hull vertices.
+
+    A run of equal labels traces a straight line in (pfa, pmiss), so points
+    strictly inside a run are collinear with their neighbours and can never be
+    hull vertices. Dropping them first must therefore change nothing.
+    """
+    rng = np.random.default_rng(seed)
+    n_target = int(rng.integers(2, 50))
+    n_nontarget = int(rng.integers(2, 300))
+    target = rng.normal(rng.uniform(0, 3), 1, n_target)
+    nontarget = rng.normal(0, 1, n_nontarget)
+
+    expected = _hull_over_every_roc_point(target, nontarget)
+    pfa, pmiss = roc_convex_hull(target, nontarget)
+
+    assert pfa.shape == expected[:, 0].shape
+    np.testing.assert_array_equal(pfa, expected[:, 0])
+    np.testing.assert_array_equal(pmiss, expected[:, 1])
+
+
+@pytest.mark.parametrize("seed", range(8))
+def test_the_reduction_is_exact_under_heavy_ties(seed):
+    """Ties are where collinearity is densest, so they are the hard case."""
+    rng = np.random.default_rng(100 + seed)
+    target = rng.integers(0, 4, int(rng.integers(2, 40))).astype(np.float64)
+    nontarget = rng.integers(0, 4, int(rng.integers(2, 200))).astype(np.float64)
+
+    expected = _hull_over_every_roc_point(target, nontarget)
+    pfa, pmiss = roc_convex_hull(target, nontarget)
+    np.testing.assert_array_equal(pfa, expected[:, 0])
+    np.testing.assert_array_equal(pmiss, expected[:, 1])
+
+
+def test_the_reduction_actually_reduces():
+    """A reduction that keeps everything would pass the exactness tests."""
+    from legal_eval.metrics.eer import _staircase_vertices
+
+    rng = np.random.default_rng(0)
+    n_target, n_nontarget = 40, 4000
+    target = rng.normal(2, 1, n_target)
+    nontarget = rng.normal(0, 1, n_nontarget)
+
+    scores = np.concatenate([target, nontarget])
+    is_target = np.concatenate(
+        [np.ones(n_target, dtype=bool), np.zeros(n_nontarget, dtype=bool)]
+    )
+    is_target = is_target[np.argsort(scores, kind="mergesort")]
+    full = n_target + n_nontarget + 1
+    points = np.zeros((full, 2))
+    kept = _staircase_vertices(is_target[::-1], points).shape[0]
+
+    # At most two points per label transition, and there are at most 2*n_target
+    # transitions, so the kept set is bounded by the target count and not by the
+    # nontarget count. That is the whole point: nontargets are what explode.
+    assert kept <= 4 * n_target + 4, kept
+    assert kept < full / 10, (kept, full)
+
+
+def test_a_tiny_point_set_is_returned_unchanged():
+    """Below four points there is nothing to reduce and no run structure."""
+    from legal_eval.metrics.eer import _staircase_vertices
+
+    points = np.array([[0.0, 1.0], [0.5, 0.5], [1.0, 0.0]])
+    out = _staircase_vertices(np.array([True, False]), points)
+    np.testing.assert_array_equal(out, points)
+
+
+def test_the_eer_still_matches_the_closed_form_at_a_large_population():
+    """Equal-variance Gaussians separated by d have EER Phi(-d/2).
+
+    Run at a population large enough that the reduction is doing real work, so
+    the scaling path is covered and not only the small one.
+    """
+    from scipy.stats import norm
+
+    rng = np.random.default_rng(0)
+    d = 2.0
+    n = 4000
+    target = rng.normal(d, 1.0, n)
+    nontarget = rng.normal(0.0, 1.0, n * 20)
+    assert rocch_eer(target, nontarget) == pytest.approx(norm.cdf(-d / 2), abs=0.01)
