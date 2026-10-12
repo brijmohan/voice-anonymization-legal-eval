@@ -225,6 +225,20 @@ python examples/03_verify_against_score_matrices.py --release-dir release/
 
 Read [`docs/data-release.md`](docs/data-release.md) before redistributing them.
 
+## Running it on your own system
+
+[`docs/protocol.md`](docs/protocol.md) is the procedure, aimed at somebody
+evaluating their own anonymization system, including VoicePrivacy Challenge
+participants. It states what to compute, what to report beside each number, and
+the seven things that make a reported result uninterpretable.
+
+The short version of why a protocol and not just a metric: a privacy number
+means nothing without the population it was computed over, the attacker that
+computed it, and the chance level for that population. Singling Out's chance
+level is `exp(-1)`, so a reported 0.37 is indistinguishable from an attacker
+who learned nothing. Linkability's is `1/N`, so the same 0.37 is near-perfect
+identification at `N = 3` and useless at `N = 10000`.
+
 ## Checking a result before you believe it
 
 ```sh
