@@ -96,6 +96,37 @@ For the newer proposals on the same artifact, see
 [`metric-comparison.md`](metric-comparison.md) and
 `examples/04_compare_privacy_metrics.py`.
 
+## Cost, before you pick a population
+
+Singling Out is the expensive metric, and its cost is not what you would guess
+from the number you report. The sweep evaluates **every enrollment speaker**
+for every `N`, every run and every fold, so
+
+    draws = enrollment speakers x runs x folds x number of N values
+
+At 9,779 enrollment speakers with three runs and three folds over nine values
+of `N`, that is **792,099 draws**, measured at **6.75 ms each**, so about 90
+minutes **[M]**. The process sits at 101% CPU, single-threaded: this is a
+Python loop, not a BLAS matmul, so more cores do not help and the work does not
+shard inside one process.
+
+The part to be careful about is how a draw scales with `N` itself. From one
+measured ladder you cannot separate fixed overhead from the `N`-proportional
+term, and the two give very different answers **[I]**:
+
+| ladder | sum of N | if fixed-cost | if N-proportional |
+|---|---|---|---|
+| to 500 | 966 | 1.5 h | 1.5 h |
+| to 2,500 | 4,466 | 1.8 h | 6.9 h |
+| to 5,000 | 9,466 | 2.0 h | 14.6 h |
+| to 9,779 | 19,245 | 2.1 h | 29.6 h |
+
+So **add large populations one at a time and measure**, rather than writing an
+ambitious ladder and starting it. Running a ladder you have not costed is how
+a day disappears. Reducing folds or runs cuts the cost proportionally but
+removes the spread, and a standard error of exactly zero is one of the things
+`preflight` refuses.
+
 ## Step 5: report chance levels and bounds
 
 Every metric, next to its value:
