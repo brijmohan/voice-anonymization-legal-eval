@@ -549,6 +549,12 @@ clean, cheap experiment and we should run it.
 
 ## 5. Research directions, and the alignment test
 
+> The six research questions, with the scientific motivation for each, what
+> would count as an answer, and the dependency structure between them, are in
+> [`research-questions.md`](research-questions.md). Read it before proposing
+> work: RQ3 gates RQ1, RQ4 explains RQ2, and RQ6 bounds all of them.
+
+
 The twelve ideas live in [`docs/research-ideas.md`](research-ideas.md). This
 section is the filter, not the list.
 
