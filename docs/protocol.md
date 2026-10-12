@@ -40,6 +40,25 @@ the sampling. [`subset-design.md`](subset-design.md) has the argument;
 
 **Report `N`.** Everything downstream is a function of it.
 
+**And do not use one population for every metric.** Each has a range in which
+it can say anything, and the ranges do not coincide. Singling Out's chance
+level is fixed at `exp(-1)` whatever the population, while the value an
+attacker reaches falls toward it as the candidate set grows, so its room
+collapses: measured on Common Voice, 0.533 at `N = 2` and **0.025 at
+`N = 9,779`**, a factor of 21 **[M]**. Linkability's chance level is `1/N`, so
+its room grows instead.
+
+The consequence is not academic. At `N = 9,779` the McAdams baseline brings
+Singling Out to **0.3684 against a chance level of 0.3679**, which read alone
+says the system has achieved anonymity. Linkability on the same embeddings,
+attacker and trials says the right speaker still ranks first **28.1% of the
+time out of 9,779, which is 2,748 times chance** **[M]**.
+
+So report Singling Out at a population where it has room, report the ranking
+metrics at a population where they are not pinned, and say which population
+each figure came from. A single `N` for all of them guarantees that at least
+one is being read outside the range where it means anything.
+
 **Also evaluate the original, unprotected audio at the same `N`, and report it
 beside every result.** This is not a formality and it is the step most likely to
 be skipped.

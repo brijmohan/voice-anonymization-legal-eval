@@ -585,6 +585,79 @@ yet about significance **[?]**. ZEBRA, Cllr and the Gomez-Barrero linkability
 are not in this comparison and all three should be: ZEBRA in particular reports
 a worst-case individual figure that neither family here provides.
 
+### 3.14 The metrics have complementary usable populations, and one of them would certify McAdams as anonymous
+
+The full comparison has now run: nine quantities, ten systems, thirteen
+populations, one artifact, preflight passing with no failures **[M]**. It
+revises 3.13 rather than confirming it.
+
+**Each metric has a population range in which it can say anything at all, and
+the ranges do not coincide.** Measured on original Common Voice audio, the room
+between the attacker's score and its chance level **[M]**:
+
+| N | Singling Out room | Linkability room | ratio |
+|---|---|---|---|
+| 2 | 0.5332 | 0.4923 | 1.08 |
+| 29 | 0.2950 | 0.8786 | 0.34 |
+| 500 | 0.1246 | 0.7145 | 0.17 |
+| 9,779 | **0.0247** | 0.4514 | **0.055** |
+
+**Singling Out's room collapses by a factor of 21 as the population grows.**
+The reason is structural and not a property of the data: its chance level is
+fixed at `exp(-1)` whatever `N` is, while the value an attacker achieves falls
+toward it as the candidate set grows. Linkability's chance level is `1/N`, so
+its room grows instead.
+
+**The consequence at a realistic population is severe.** At `N = 9,779`,
+McAdams brings Singling Out to **0.3684 against a chance level of 0.3679**
+**[M]**. Read alone, that says the system has achieved anonymity. Linkability
+on the same embeddings, same attacker, same trials says the attacker still
+ranks the right speaker first **28.1% of the time out of 9,779 candidates,
+which is 2,748 times chance** **[M]**.
+
+So a controller reporting Singling Out at a population of thousands would
+report anonymity for a system whose output still identifies the correct person
+more than a quarter of the time.
+
+**This corrects what 3.13 concluded.** The actionable rule is not "require one
+metric per axis". It is:
+
+> **A procedure must specify the population per metric, not one population for
+> all of them.** Singling Out is informative at small `N` and loses its range
+> at large `N`. The ranking metrics are the reverse. Reporting both at a single
+> population guarantees that at least one of them is being read outside the
+> range where it means anything.
+
+**What this does not say.** It is not that Singling Out is wrong. At `N = 29`
+it has room 0.2950 and discriminates perfectly well, and the Article 29
+criterion it implements is a real and separate legal test. The failure is in
+using it at a population where its dynamic range has gone, and nothing in the
+metric announces that. The remedy is 3.12's: report the original's value beside
+every result, because the room is then visible.
+
+**A caution about the figure I was most enthusiastic about.** ZEBRA's worst-case
+individual disclosure is a **maximum over trials**, so it grows with the number
+of trials for the same reason any maximum does. Measured: 2.845 on libri_test
+with 29 speakers, 4.893 on Common Voice with 9,779 **[M]**. Those are not
+comparable, and the ENFSI category moved from C to D largely because the second
+corpus has five orders of magnitude more non-mated trials. The worst-case
+figure needs its trial count reported beside it, exactly like everything else
+here, and it is not a cross-corpus quantity.
+
+**The categorical tags, with that caveat applied within a corpus** **[M]**:
+
+| corpus | original | McAdams | ASR-BN | sttts |
+|---|---|---|---|---|
+| libri_dev | C | C | C | C |
+| libri_test | C | C | **B** | **B** |
+| Common Voice | D | D | not run | not run |
+
+Within a corpus, **McAdams never changes the category**, and the two strongest
+systems move it by one. That is the plainest statement this project can make to
+a non-specialist: on the ENFSI scale, the strength of evidence about the most
+exposed individual is unchanged by the DSP baseline and improves by one
+category under the best systems tested.
+
 ---
 
 ## 4. Where identity actually leaks
