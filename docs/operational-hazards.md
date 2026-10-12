@@ -116,6 +116,38 @@ python scripts/check_scp_readers.py --root /path/to/pipeline
 This started as a habit, "grep the pipeline before running it", and the habit
 failed twice in a row, which is the reason it is now a script.
 
+### Intermediate files named by extending a real name
+
+**What happened.** Sharded embedding extraction writes one directory per
+shard. They were named by extending the dataset name,
+`cv27_enrolls_mcadams_sh0` beside `cv27_enrolls_mcadams`, which is the obvious
+scheme and also makes them satisfy the naming pattern
+`legal_eval.vpc.pair_datasets` recognises. So the shards **paired with each
+other**, and the comparison produced a complete, entirely fictitious system per
+shard.
+
+Twenty-four leftovers, twelve spurious systems, each a sixth of the data. It
+was noticed only because a progress line read `=== cv27 mcadams_sh0 ===`. The
+wasted compute was the smaller cost: the output would have carried twelve
+systems that do not exist, and the partial order over systems would have been
+drawn partly from them.
+
+Note which guard did not fire. `unpaired_datasets`, added the same day for the
+opposite failure, finds datasets that pair with nothing. These pair perfectly.
+
+**The test.** `legal_eval.vpc.suspicious_datasets`, which the comparison calls
+and reports on. Two rules, because the first is a guess about naming and the
+second is not:
+
+- the name matches an intermediate pattern: `_sh0`, `_shard0`, `_part0`,
+  `temp`, `tmp`, `smoke`, `warm`
+- its system suffix strictly **extends** another present suffix, which catches
+  a scheme nobody anticipated
+
+**The habit that would also have worked.** Delete or move intermediates when
+the step that produced them succeeds. The merge driver had no cleanup, so the
+shards outlived their purpose by two hours and a wasted run.
+
 ### A merge that discards what it should keep
 
 **What happened.** The ASR shard merge was written to overwrite the canonical
