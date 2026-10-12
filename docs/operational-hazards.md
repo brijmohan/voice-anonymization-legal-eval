@@ -207,6 +207,29 @@ concurrent shard workers each ran that install and clobbered `env_sttts.sh`.
 **The habit.** `export NEW_INSTALL_TRIGGER=no` once installed, and warm up with
 a single worker before launching many.
 
+### Buffered output makes a long job indistinguishable from a hung one
+
+**What happened.** Three times in one day, a job that was working looked dead.
+
+Python buffers stdout when it is redirected rather than attached to a terminal,
+so a 30 minute stage wrote nothing at all to its log. `grep` does the same in a
+pipeline, so a remote `ssh ... | grep` returned an empty file while the command
+behind it ran fine. In the worst case a watch loop treated the resulting empty
+output as a success: its `case` matched the wildcard branch and it reported a
+merge that had not happened.
+
+**The habit.**
+
+- `python -u` for anything whose output is redirected, always.
+- `grep --line-buffered` and `awk ... fflush()` in any pipeline you intend to
+  read while it runs.
+- Judge liveness from `ps -o times,pcpu`, not from log output. Climbing CPU
+  time means computing; silence means nothing either way.
+- In a watch loop, an empty result is **not** a pass. Match the success
+  condition explicitly and let everything else, including empty, fall through
+  to "unknown". The Monitor rule of thumb applies: if the job died right now,
+  would the filter emit anything?
+
 ### `nvidia-smi` reports no GPU when only `PATH` is set
 
 **What happened.** On this workstation image the driver lives outside the
