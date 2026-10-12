@@ -70,8 +70,12 @@ Three things do not, and each bounds a claim:
   attacker than the label implied, and that the plan collects lazy-informed EER
   for analysis rather than ranking. The ignorant condition has never been
   computed here.
-- **B4, the neural audio codec baseline, was never run**, dropped at 188 days
-  projected **[M]**. "Across the VPC 2026 baselines" means three of four.
+- **B4, the neural audio codec baseline, was never run.** "Across the VPC 2026
+  baselines" means three of four. The 188 day figure behind that decision was
+  the right rate against the wrong corpus: it is `train-clean-360`, which only
+  the semi-informed attacker needs. The evaluation sets are 4,255 utterances,
+  so B4 under the lazy-informed attacker is about 7.7 days single-process
+  **[I]**. See [`vpc-2026-conformance.md`](vpc-2026-conformance.md).
 - **IEMOCAP is excluded** and the two utility metrics are not run, so nothing
   here speaks to the privacy and utility trade-off.
 
@@ -650,7 +654,11 @@ run resumable rather than restartable.
 
 ### Decisions already taken on cost grounds **[M]**
 
-- **nac dropped.** 496 of 104,014 utterances in 21.5 hours, about 188 days.
+- **nac dropped.** 496 of 104,014 utterances in 21.5 hours, so 156 s per
+  utterance, about 188 days for `train-clean-360`. **Corrected 12 October:**
+  that corpus is only needed for the semi-informed attacker. The evaluation
+  sets are 4,255 utterances, about 7.7 days single-process, so B4 under the
+  lazy-informed attacker is feasible and was dropped on the wrong denominator.
   VPC's own code calls the loop barbaric.
 - **float32 for released matrices.** Exactly lossless here, max error 0.000e+00,
   10.5 GB to 5.2 GB.

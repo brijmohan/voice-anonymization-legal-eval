@@ -54,9 +54,41 @@ The plan's Track 1 baselines, with `B1` removed and `B6` excluded this edition:
 | B4 | HuBERT Base quantized semantic encoder + EnCodec, selection | `nac` | **not run** |
 | B5 | YAAPT, wav2vec2 + TDNN-F + VQ, one-hot speaker, HiFi-GAN, selection | `asrbn` | run on LibriSpeech, both attackers |
 
-**B4 is missing**, dropped on cost: the projected wall time was 188 days on the
-hardware available **[M]**. Any statement of the form "across the VPC 2026
-baselines" therefore covers three of four and must say so.
+**B4 is missing**, dropped on cost. Any statement of the form "across the VPC
+2026 baselines" therefore covers three of four and must say so for now, but the
+cost figure behind the decision was applied to the wrong corpus:
+
+**Correction, 12 October 2026.** B4, the neural audio codec baseline, was
+dropped at "188 days projected". That figure is right for the wrong corpus.
+
+The measured rate is 496 utterances in 21.5 hours, which is **156 seconds per
+utterance** **[M]**. The 188 days is that rate applied to `train-clean-360`,
+104,014 utterances **[M]**. But `train-clean-360` is needed only to fine-tune
+the **semi-informed** attacker. The metrics themselves need the evaluation
+sets, and those total **4,255 utterances**: `libri_dev_enrolls` 343,
+`libri_dev_trials_mixed` 1,978, `libri_test_enrolls` 438,
+`libri_test_trials_mixed` 1,496 **[M]**.
+
+At the measured rate that is **7.7 days single-process, or about 31 hours
+sharded six ways** **[I]**, with the caveat that neural codec language
+modelling is autoregressive and probably GPU-bound, so six-way sharding may not
+scale the way embedding extraction did.
+
+So the position is:
+
+- **B4 under the lazy-informed attacker is feasible**, in days. That is the
+  condition our metric comparison uses, so B4 could be added to it and the
+  comparison would cover four of four Track 1 baselines instead of three.
+- **B4 under the semi-informed attacker remains infeasible** here, because that
+  one really does need the 104,014 anonymized training utterances.
+
+Recorded as a correction rather than quietly fixed, because the original
+decision was reasonable on its own terms and the error was in which number the
+cost applied to. The same mistake is available whenever a cost is estimated
+against a pipeline's largest stage rather than the stage a result actually
+needs.
+
+
 
 ## Evaluation model
 
