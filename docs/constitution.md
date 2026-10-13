@@ -723,6 +723,47 @@ The claim in 3.14 that does not need qualifying is the raw comparison, because
 it involves no division: Singling Out reads 0.3684 against a chance level of
 0.3679, and Linkability reads 0.2810 where chance is 0.0001 **[M]**.
 
+### 3.17 The 2026 ASR-BN baseline cannot process a clip with no pitch
+
+Running the 2026 ASR-BN baseline (B5, `hifigan_bn_tdnnf_wav2vec2_vq_48_v1`)
+over Common Voice 27 ended the run at 44,032 of 60,000 utterances **[M]**:
+
+```
+RuntimeError: maximum size for tensor at dimension 0 is 4 but size is 5
+```
+
+The trace runs through the F0 extractor: `get_f0` into YAAPT, into
+`spec_track`, into a median filter whose window is 5. Padding by 2 on each side
+produced a tensor of length 4, so the input had length **zero**. The utterance
+had no voiced candidate frames at all, and the median of nothing raised instead
+of returning nothing. Verified by reproducing the identical error message from
+the original function on an empty tensor **[M]**.
+
+Two things follow, and the second is the one that matters.
+
+**The defect is in the baseline, not in our use of it.** Nothing in the
+configuration or the data layout is unusual. A clip with no detectable pitch is
+enough, and the fix is one guard: an empty median is empty. Checked
+bit-identical against the original on 756 inputs spanning lengths 1 to 1024 and
+windows 1 to 15, so no value the original produced has moved **[M]**.
+
+**The field has not seen this because the field evaluates on LibriSpeech**,
+which is read speech from volunteers recorded to a standard. It contains no
+clip with zero voiced frames. Common Voice is what the regulation is about:
+speech contributed by the public, including clips that are silence, breath or
+noise. This is the second system in two attempts whose behaviour on Common
+Voice differs from its behaviour on LibriSpeech in a way that stops a run, the
+first being 3.9. The pattern is now worth stating as a prediction: **a baseline
+validated on LibriSpeech should not be assumed to run on in-the-wild speech at
+all**, let alone to anonymize it to the same degree **[I]**.
+
+There is a methodological point in how it failed. A crash is the fortunate
+outcome, as in 3.9: it is loud. The dangerous version is a pipeline that drops
+the utterance and carries on, because then the population silently shrinks and
+every metric is computed over a set the report does not describe. Our chain now
+distinguishes the two by arithmetic: an output count short by exactly the number
+of declared skips continues, and any other shortfall refuses to proceed.
+
 ---
 
 ## 4. Where identity actually leaks
