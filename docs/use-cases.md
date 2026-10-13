@@ -13,6 +13,32 @@ destroyed recording, recorded as finding 3.9.
 This document is the other half of the framework. The metrics say how much
 survives. The use case says which of it was supposed to.
 
+## Why utility is not the secondary axis
+
+The usual framing treats privacy as the objective and utility as a constraint
+to be traded against it. The deployment incentive runs the other way, and the
+mechanism is worth stating because it decides whether any of this gets used
+**[I]**, from commercial experience rather than from measurement.
+
+A data controller holding sensitive speech has three options: keep it and carry
+the liability, anonymize it and reuse it, or delete it. Anonymization competes
+with deletion, not with keeping the original. So a method that protects well
+and leaves the data unusable does not get deployed badly. **It does not get
+deployed at all, and the data is deleted instead.** The controller loses
+nothing they were going to use, and the research that produced the method
+protects nobody, because the recordings it would have protected no longer
+exist.
+
+That reverses the priority order. A privacy method's utility cost is not a
+concession to industry. It is the condition under which the privacy is ever
+realised. It also explains why heavy noise addition, which is strong on paper,
+has not been adopted for speech: the data it protects is data nobody can use.
+
+The consequence for this framework is that a privacy number quoted without its
+utility cost is not conservative. It is uninformative about whether the system
+would ever be used, and a system that is never used provides no protection at
+all.
+
 ## The point that reorganises everything
 
 **In many real deployments, an attribute that the third Article 29 criterion
