@@ -286,6 +286,35 @@ same applies to a config a long job re-reads between stages.
 This one was caught by noticing it rather than by anything failing, which is
 the weakest way to catch something.
 
+### A deferred import fails at the step that needs it, not at the start
+
+**What happened.** The package imports `scipy`, `h5py`, `torch` and `soundfile`
+at their point of use, behind an error naming the extra to install. That is the
+right design for a library: somebody computing metrics on a laptop should not
+need an audio stack. It interacts badly with a long chain.
+
+A six stage run anonymized 255,580 utterances over two hours and forty minutes,
+reached the audio integrity stage, and stopped:
+
+```
+ImportError: Checking anonymized audio requires soundfile.
+```
+
+The message was correct, the design was correct, and the ordering wasted the
+afternoon. Nothing was lost, because the anonymization output was on disk and
+the chain restarted from the completed state, but nothing had to be at risk.
+
+**The habit.** A chain proves every dependency before it does any work, in a
+stage of its own that imports each module the later stages need and exits
+non-zero naming what is missing. A dependency check costs a second at the
+start and costs the whole run at the end.
+
+This generalises past imports. Anything a later stage needs and an earlier
+stage does not, such as an output directory's write permission, a model file,
+or a token that must still be valid in four hours, belongs in that same stage.
+`--help` on each script is not sufficient and was in fact already being run
+here: argparse does not reach a deferred import.
+
 ### Credentials expire in the middle of a multi-hour run
 
 **What happened.** `gcloud` tokens last a few hours. Twice in one session they

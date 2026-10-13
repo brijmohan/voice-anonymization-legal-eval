@@ -94,19 +94,38 @@ def test_each_admission_phrase_triggers_the_rule(phrase):
 
 # Reference markers, which identify a specific case file.
 
-@pytest.mark.parametrize("marker", ["N/Ref MAI/SA000000",
-                                    "N/Réf. MAI/SA000000",
-                                    "Saisine n 00000000",
-                                    "saisine No 123"])
-def test_correspondence_reference_markers_are_forbidden_content(marker):
+#: Marker fragments, assembled at runtime so that this file never itself
+#: contains a string the checker would match. Writing a realistic marker into
+#: a fixture is how a real case number reached a public test file once, and
+#: putting this file on the checker's allow list would have been the wrong fix:
+#: it would create an unchecked hole to hold the very patterns being tested.
+MARKER_PARTS = [
+    ("N/R", "ef MAI/SA000000"),
+    ("N/R", "\u00e9f. MAI/SA000000"),
+    ("Saisine", " n 00000000"),
+    ("saisine", " No 123"),
+]
+
+
+@pytest.mark.parametrize("head,tail", MARKER_PARTS)
+def test_correspondence_reference_markers_are_forbidden_content(head, tail):
+    marker = head + tail
     assert any(pattern.search(marker)
                for pattern, _ in cnpm.FORBIDDEN_CONTENT), marker
+
+
+def test_this_test_file_contains_no_marker_it_would_flag():
+    """Otherwise the checker has to be told to skip its own tests, and an
+    allow list entry is a hole exactly where the sensitive patterns live."""
+    source = Path(__file__).read_text(encoding="utf-8")
+    for pattern, why in cnpm.FORBIDDEN_CONTENT:
+        assert not pattern.search(source), f"{why}: {pattern.pattern}"
 
 
 def test_an_ordinary_document_reference_is_not_a_correspondence_marker():
     """Opinion 05/2014 and a DOI are cited constantly and must not trip."""
     for benign in ("Opinion 05/2014", "doi:10.21437/Interspeech.2025-1699",
-                   "ref. MAI/SA241024"):
+                   "ref. MAI/SA" + "241024"):
         assert not any(pattern.search(benign)
                        for pattern, _ in cnpm.FORBIDDEN_CONTENT), benign
 
