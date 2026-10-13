@@ -148,6 +148,16 @@ works categorised by the question they answer rather than by topic, with
 working set is marked separately from the background, because a library where
 every entry looks equally load bearing says nothing about what to read first.
 
+[`docs/use-cases.md`](docs/use-cases.md) is the other half of the framework.
+The metrics say how much survives; the use case says which of it was supposed
+to. In many real deployments an attribute that the third criterion treats as
+disclosure is the reason the data was collected, so the same measurement is a
+leak or a requirement depending on what the data is for.
+`legal_eval.tradeoff` therefore refuses to score a system without a declared
+use case, and asserts only one ordering: a system is better than another when
+it is at least as private and at least as useful, with one strict. Everything
+else is a trade and is reported as a trade.
+
 ## Using it on your own data
 
 Point it at Kaldi-style directories, each holding a `spk2utt` file and an

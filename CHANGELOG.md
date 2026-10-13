@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+**New: `legal_eval.tradeoff`, privacy and utility on one plane.** The field
+reports a privacy number and a utility number and leaves the reader to combine
+them, which cannot be done: two systems differing on both axes are not ordered
+by either. This asserts dominance only, and reports an unorderable pair as a
+trade rather than resolving it with a preference that belongs to the controller
+and the regulator. `equal_utility_exposure` interpolates the frontier so
+systems can be compared at the utility a deployment actually needs.
+
+It also makes the role of an attribute explicit. Whether recovering emotion
+from anonymized speech is a breach or a requirement depends entirely on what
+the data is for, and the measurement is identical either way. A system cannot be
+scored without a declared use case, and each declared attribute needs a
+justification, because an undeclared default of "prohibited" rewards a system
+that destroys the signal. [`docs/use-cases.md`](docs/use-cases.md) works
+through ten deployments and names which criterion actually binds in each.
+
+The chance band used for an attribute verdict was a magic number written twice.
+It is now `legal_eval.inference.AT_CHANCE`, with one definition, and a test
+pins the identity rather than the equality.
+
 **New: `legal_eval.criteria` and `scripts/report_criteria_split.py`, the three
 Article 29 criteria on one scale.** The nine privacy quantities in use are not
 commensurable, so a table of raw readings invites the comparison it cannot

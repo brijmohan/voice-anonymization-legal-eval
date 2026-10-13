@@ -66,6 +66,12 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+#: An advantage at or below this counts as chance. Below it a classifier has
+#: not beaten the majority class by enough to call the attribute recoverable,
+#: and above it the attribute is disclosed. `legal_eval.tradeoff` reads the
+#: same number, which is why it is named here rather than written twice.
+AT_CHANCE = 0.02
+
 
 @dataclass
 class AttributeDisclosure:
@@ -107,7 +113,7 @@ class AttributeDisclosure:
 
     def summary(self) -> str:
         """One block, with the verdict stated rather than left to the reader."""
-        if self.advantage <= 0.02:
+        if self.advantage <= AT_CHANCE:
             verdict = "no disclosure beyond the prior"
         elif self.advantage < 0.2:
             verdict = "weak disclosure"
