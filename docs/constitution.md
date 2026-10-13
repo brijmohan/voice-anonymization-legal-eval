@@ -103,6 +103,7 @@ favourably.
 | Expensive intermediates are cached and never deleted casually | Recomputation is the largest avoidable cost in this project | section 7 |
 | Cost is minimised in the arithmetic, never in the attacker | A cheaper attacker is a weaker experiment, not a faster one | the proportionate-cost test below |
 | A source we call non-public is never quoted here | A document can be careful sentence by sentence and be the letter as a whole | `scripts/check_no_private_material.py`, CI |
+| Every reference sits in one place in the taxonomy | A bibliography drifts from the index that describes it, and still looks complete | `scripts/build_bibliography.py`, `tests/test_bibliography.py` |
 
 ### Traceability
 

@@ -142,6 +142,12 @@ findings and their evidence, and where identity survives anonymization. Every
 claim carries a marker so a reader can tell a measurement from an inference:
 [M] measured, [P] published, [I] inferred, [?] open.
 
+[`docs/bibliography.md`](docs/bibliography.md) is the reference library: 262
+works categorised by the question they answer rather than by topic, with
+[`docs/references.bib`](docs/references.bib) as the machine-readable form. The
+working set is marked separately from the background, because a library where
+every entry looks equally load bearing says nothing about what to read first.
+
 ## Using it on your own data
 
 Point it at Kaldi-style directories, each holding a `spk2utt` file and an
