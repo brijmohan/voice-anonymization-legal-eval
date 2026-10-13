@@ -883,6 +883,75 @@ every metric is computed over a set the report does not describe. Our chain now
 distinguishes the two by arithmetic: an output count short by exactly the number
 of declared skips continues, and any other shortfall refuses to proceed.
 
+### 3.18 Inference partially survives a system that defeats verification
+
+The question this was built to answer: McAdams moves verification barely at all
+and moves inference not at all (3.10), so does inference survive a system that
+*does* defeat verification? ASR-BN (B5) on Common Voice 27, 255,580 utterances,
+WavLM-ECAPA lazy-informed attacker, 9,779 speakers **[M]**.
+
+**ASR-BN does substantially defeat verification on this corpus.** Every
+verification quantity moves a long way, which McAdams never did:
+
+| | original | ASR-BN | McAdams |
+|---|---|---|---|
+| EER | 0.0670 | 0.2768 | 0.0994 |
+| Cllr min | 0.2508 | 0.7873 | 0.3506 |
+| Gomez-Barrero `D_sys` | 0.8284 | 0.3604 | 0.7560 |
+| ZEBRA population | 0.5312 | 0.1451 | 0.4575 |
+| ZEBRA worst case, tag | 4.8933, **D** | 4.2913, **D** | 4.2913, **D** |
+| inference advantage, 6 utt/spk | +0.6859 | +0.4372 | +0.6919 |
+| inference advantage, 20 utt/spk | +0.7604 | +0.4488 | +0.7846 |
+
+**The hypothesis is partly refuted, and that is the result.** Inference does not
+survive untouched. ASR-BN reduces it, which McAdams did not. Expressed as the
+fraction of the original recordings' room above chance that each system removes
+**[M]**:
+
+| system | linkability family, median of 4 | inference, median of 2 | spread |
+|---|---|---|---|
+| ASR-BN | 64.1% | 38.6% | **25.4 points** |
+| McAdams | 11.0% | **-2.0%** | 13.1 points |
+
+So the criteria come apart quantitatively rather than qualitatively. A
+controller who read the verification quantities would conclude this system
+removed about 64% of the available disclosure. The third criterion received
+about 39%. Reading the first as a proxy for the second overstates the
+protection by a factor of about 1.7.
+
+**The absolute level is the part that matters legally, and it is worse than the
+reduction suggests.** A residual advantage of +0.45 is "substantial disclosure"
+by this package's own verdict, and the most exposed minority value, female, is
+still recovered at 0.65 recall against 0.88 on the original **[M]**. A system
+can take two thirds of the verification room and still leave an attribute
+recoverable well above chance.
+
+**Three axes, three behaviours, from one artifact.** This is the strongest form
+of the commensurability finding so far:
+
+- the population verification quantities move a great deal,
+- inference moves about three fifths as much,
+- and the ENFSI category of the worst individual does not change at all: it is
+  **D** for the original, for McAdams and for ASR-BN.
+
+An evaluation reporting any one of those three would describe a different
+system from the other two.
+
+**What McAdams did is still the sharper warning.** It removed 11% of the
+verification room and made inference *worse*, by 0.9% and 3.2% of the room at
+the two evidence levels. A system can be certified as improving privacy on
+every verification metric in the field while increasing what an attacker learns
+about the speaker's attributes.
+
+Pending at the time of writing: the population sweep, which adds Singling Out
+and this project's Linkability for the ASR-BN condition. The figures above come
+from the trial-score metrics and the attribute inference, neither of which
+needs a candidate population **[M]**.
+
+Operationally, this run also produced 3.17 and cost an afternoon to a
+dependency ordering error, both recorded in
+[`operational-hazards.md`](operational-hazards.md).
+
 ---
 
 ## 4. Where identity actually leaks
