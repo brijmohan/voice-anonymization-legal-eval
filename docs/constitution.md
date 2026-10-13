@@ -943,10 +943,82 @@ the two evidence levels. A system can be certified as improving privacy on
 every verification metric in the field while increasing what an attacker learns
 about the speaker's attributes.
 
-Pending at the time of writing: the population sweep, which adds Singling Out
-and this project's Linkability for the ASR-BN condition. The figures above come
-from the trial-score metrics and the attribute inference, neither of which
-needs a candidate population **[M]**.
+**The sweep has since completed, and it moves the headline figure.** With
+Linkability, SRD and LID included the linkability family has seven readings
+rather than four, and its median rises **[M]**:
+
+| criterion | readings | ASR-BN | McAdams |
+|---|---|---|---|
+| linkability | 7 | **71.6%** | 13.3% |
+| inference | 2 | 38.6% | -2.0% |
+| spread | | **33.0 points** | 15.4 points |
+
+The earlier figure of 64.1% was computed from the trial-score metrics alone and
+is superseded. The conclusion is unchanged and slightly stronger: reading
+verification as a proxy for inference overstates the protection by a factor of
+about 1.9 rather than 1.7.
+
+Linkability itself is the metric that moves most, from 0.4515 to 0.0102 against
+a chance level of 0.0001, which is 97.8% of its room **[M]**. So the system
+that defeats the ranking attack most completely is the same system that leaves
+an attribute recoverable at +0.45.
+
+Preflight on the full report: **0 failures, 4 warnings**, the warnings being the
+one declared exclusion, 13 saturated zero standard errors, the known SRD and
+Linkability agreement, and one separable LID calibration **[M]**.
+
+### 3.19 Two figures from the same published metric disagree by 60 points
+
+LID reports a mean in bits and a proportion of disclosure risk. On CV27 at
+`N = 9,779` they describe different systems **[M]**:
+
+| | original | ASR-BN | removed |
+|---|---|---|---|
+| LID mean, bits | 8.2697 | 1.5717 | **81.0%** |
+| LID PDR | 0.9745 | 0.7835 | **19.6%** |
+
+Linkability and SRD's IdR agree exactly, 0.4515 and 0.0102 in both cases, which
+is what `preflight.srd_idr_matches_linkability` expects. LID's PDR does not join
+them despite being presented as the same kind of population figure: it reads
+0.7835 where they read 0.0102.
+
+So the disagreement is not between research groups. It is **inside one metric**,
+between two figures its own authors report together. Whichever of the two a
+reader takes, the other contradicts it by 60 percentage points about the same
+system on the same artifact. This is the strongest single argument the
+commensurability study has, and it was found by running both figures rather
+than by reading the paper.
+
+Consequence for `legal_eval.criteria`: `CRITERION_OF_METRIC` maps `lid_pdr` and
+not `lid_mean`, so the median above uses PDR. That choice is ours and it moves
+the headline, which is exactly why the mapping is written down rather than
+assumed.
+
+### 3.20 Singling Out reads below chance, and that is not better privacy
+
+ASR-BN's Singling Out on CV27 is **0.3451 against a chance level of 0.3679**,
+which is 8.2 standard errors below chance at `N = 9,779` and 6.7 below at
+`N = 250` **[M]**. It is systematic, not sampling noise.
+
+A value below `exp(-1)` means a predicate isolates exactly one record *less*
+often than an uninformative predicate would. The released population is more
+uniform than random. With per-utterance pseudo-speaker assignment that is what
+one would expect **[I]**: every utterance is pushed toward an unrelated target,
+so the embedding distribution collapses toward a common one and distinct
+singletons become rarer than chance.
+
+**It must not be read as privacy beyond perfect.** The first version of
+`criteria.py` reported it as "192.1% of the room removed", which is arithmetic
+standing in for an explanation. A reading past chance now sets
+`CriterionReading.beyond_chance` and the report prints "past chance" rather
+than a percentage, because there was no more room to remove and the ratio has
+stopped describing a fraction of anything.
+
+This also reconfirms 3.14 with a third system. At `N = 9,779` Singling Out
+reads 0.3926 for the original, 0.3684 for McAdams and 0.3451 for ASR-BN,
+against chance 0.3679. A controller reading only Singling Out at a realistic
+population would certify all three as anonymous, including the unanonymized
+recordings **[M]**.
 
 Operationally, this run also produced 3.17 and cost an afternoon to a
 dependency ordering error, both recorded in

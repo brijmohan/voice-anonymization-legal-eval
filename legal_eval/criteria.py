@@ -119,6 +119,13 @@ class CriterionReading:
             discloses more than the original did.
         reliable: False when ``room`` is below `MIN_ROOM`, where the reduction
             divides by almost nothing and must not be read as a result.
+        beyond_chance: True when the system reads past chance, so its exposure
+            is negative. The reduction then exceeds 1.0 and stops meaning "the
+            fraction of the room removed", because there was no more room to
+            remove. Measured on CV27: ASR-BN reads 8.2 standard errors below
+            the Singling Out chance level, which is systematic rather than
+            noise, and reporting it as 192% of the room removed would be
+            arithmetic standing in for an explanation.
     """
 
     metric: str
@@ -129,12 +136,19 @@ class CriterionReading:
     room: float
     reduction: float
     reliable: bool
+    beyond_chance: bool = False
 
     def __str__(self) -> str:
-        mark = "" if self.reliable else "  (room too small to read)"
+        if not self.reliable:
+            mark = "  (room too small to read)"
+        elif self.beyond_chance:
+            mark = "  (past chance, so the fraction is not meaningful)"
+        else:
+            mark = ""
+        removed = ("at or beyond chance" if self.beyond_chance
+                   else f"{self.reduction:+.1%} of the room removed")
         return (f"{self.metric}: {self.value:.4f} against chance "
-                f"{self.chance:.4f}, {self.reduction:+.1%} of the room "
-                f"removed{mark}")
+                f"{self.chance:.4f}, {removed}{mark}")
 
 
 def chance_for(metric: str, n: int | None = None) -> float:
@@ -206,7 +220,11 @@ def read_criterion(
     Returns:
         A `CriterionReading`. When the original sits at or below chance there
         was no room to remove, so ``reduction`` is 0.0 and ``reliable`` is
-        False rather than the ratio being formed at all.
+        False rather than the ratio being formed at all. When the *system*
+        reads past chance, ``beyond_chance`` is True and the reduction exceeds
+        1.0, which is a signal to explain rather than a better score: a
+        released population more uniform than random is not more private, it
+        is more homogeneous.
 
     Raises:
         ValueError: when the metric is unknown.
@@ -231,6 +249,9 @@ def read_criterion(
         room=float(room),
         reduction=float(reduction),
         reliable=bool(reliable),
+        # Past chance there was no more room, so the ratio stops describing a
+        # fraction of anything. Kept rather than clipped, and flagged.
+        beyond_chance=bool(room > 0 and got < 0),
     )
 
 

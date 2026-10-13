@@ -176,9 +176,15 @@ def print_system(label: str, body: dict) -> None:
           f"{'room':>8} {'removed':>9}")
     print("    " + "-" * 90)
     for shown, r in body["rows"]:
-        mark = "" if r.reliable else "   room too small to read"
+        if not r.reliable:
+            mark = "   room too small to read"
+        elif r.beyond_chance:
+            mark = "   past chance, explain rather than score"
+        else:
+            mark = ""
+        removed = "  past" if r.beyond_chance else f"{r.reduction:>8.1%}"
         print(f"    {shown:<38} {r.criterion:<14} {r.value:>8.4f} "
-              f"{r.chance:>8.4f} {r.room:>8.4f} {r.reduction:>8.1%}{mark}")
+              f"{r.chance:>8.4f} {r.room:>8.4f} {removed}{mark}")
     summary = body["summary"]
     print(f"    {'':<38} {'':<14} {'':>8} {'':>8} {'':>8}")
     for criterion in CRITERIA:
@@ -263,7 +269,8 @@ def main(argv: list[str] | None = None) -> int:
                 "readings": [
                     {"metric": shown, "criterion": r.criterion,
                      "value": r.value, "chance": r.chance, "room": r.room,
-                     "reduction": r.reduction, "reliable": r.reliable}
+                     "reduction": r.reduction, "reliable": r.reliable,
+                     "beyond_chance": r.beyond_chance}
                     for shown, r in body["rows"]
                 ],
             }

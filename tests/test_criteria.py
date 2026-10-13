@@ -237,3 +237,35 @@ def test_fixed_chance_agrees_with_preflight_where_both_define_a_metric():
     assert shared, "nothing shared, so this test stopped checking anything"
     for metric in shared:
         assert FIXED_CHANCE[metric] == pytest.approx(levels[metric]), metric
+
+
+# Reading past chance, which the CV27 measurements forced.
+
+def test_a_system_past_chance_is_flagged_rather_than_scored_above_100_percent():
+    """ASR-BN reads 8.2 standard errors below the Singling Out chance level on
+    CV27, which is systematic. Reporting that as 192% of the room removed
+    would put arithmetic where an explanation belongs."""
+    chance = math.exp(-1)
+    reading = read_criterion("singling_out", original=chance + 0.10,
+                             system=chance - 0.02)
+    assert reading.beyond_chance
+    assert reading.reduction > 1.0
+    assert "at or beyond chance" in str(reading)
+    assert "not meaningful" in str(reading)
+
+
+def test_an_ordinary_reduction_is_not_flagged():
+    chance = math.exp(-1)
+    reading = read_criterion("singling_out", original=chance + 0.10,
+                             system=chance + 0.04)
+    assert not reading.beyond_chance
+    assert "of the room removed" in str(reading)
+
+
+def test_exactly_at_chance_is_not_past_it():
+    """A boundary that drifts is a boundary that is not pinned."""
+    chance = math.exp(-1)
+    reading = read_criterion("singling_out", original=chance + 0.10,
+                             system=chance)
+    assert not reading.beyond_chance
+    assert reading.reduction == pytest.approx(1.0)
