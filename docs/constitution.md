@@ -101,6 +101,8 @@ favourably.
 | Core works with numpy alone | Anyone can reproduce without a GPU stack | imports behind error messages |
 | Deviations from the original experiment are documented | A reader comparing to the paper must know which version produced which number | `docs/differences.md` |
 | Expensive intermediates are cached and never deleted casually | Recomputation is the largest avoidable cost in this project | section 7 |
+| Cost is minimised in the arithmetic, never in the attacker | A cheaper attacker is a weaker experiment, not a faster one | the proportionate-cost test below |
+| A source we call non-public is never quoted here | A document can be careful sentence by sentence and be the letter as a whole | `scripts/check_no_private_material.py`, CI |
 
 ### Traceability
 
@@ -110,6 +112,122 @@ published results is: code on PyPI, score matrices under
 [10.5281/zenodo.23142030](https://doi.org/10.5281/zenodo.23142030), and
 `examples/03_verify_against_score_matrices.py` recomputing 2,640 published
 points from them. Mean absolute difference 0.0007, worst 0.00509 **[M]**.
+
+### Proportionate cost: economise on the arithmetic, never on the attacker
+
+An evaluation can fail by costing too much or by costing too little, and the
+two failures pull in opposite directions.
+
+**Too expensive, and nobody reproduces it.** We have the measurement: a Singling
+Out run was abandoned at 4h20m without finishing, inside a loop over 95.6M ROC
+points **[M]**. A procedure a data controller cannot afford to run is not a
+procedure. For a standard it is worse than useless, because it will be ignored
+in favour of whatever is cheap, and what is cheap today is the EER.
+
+**Too cheap because the attacker was weakened, and it certifies anonymity that a
+real attacker breaks.** Hanisch et al. name exactly this: evaluation assumes "a
+difficult recognition scenario and thus a weak adversary" **[P]**. Obligation
+**G2** requires the attacker's sample diversity and capability to be stated
+concretely, which makes the attacker part of the threat model and not a line in
+a compute budget.
+
+**The rule that resolves it.** The attacker is fixed by the threat model. Given
+that attacker, the cost of computing a metric is driven to the minimum by exact
+mathematical reduction. Never by subsampling the evaluation, never by weakening
+the attacker, and never by approximating without a stated bound.
+
+The distinction has to be written down because on a budget the two are
+indistinguishable. Both save hours. One is sound and the other silently
+invalidates the result.
+
+#### What "simple yet sophisticated" means operationally
+
+Prefer a construct that is a sort and a sweep to implement and exactly optimal
+to justify. Five have earned their place here, and all five are exact rather
+than approximate **[M]**:
+
+| Construct | Replaces | Effect | Exact |
+|---|---|---|---|
+| Staircase vertices of the ROC convex hull | every ROC point | 95.6M points to 19,559; 4h20m unfinished to 29.5s | yes |
+| Pool adjacent violators, isotonic regression | a search over calibrations | one O(n) sweep to the optimal LLR | yes |
+| Hypergeometric probability | Monte Carlo over candidate sets | a closed form, tested against the sampling oracle | yes |
+| Analytic chance levels | simulating an uninformative attacker | two expressions, `exp(-1)` and `1/N` | yes |
+| crc32 partition of utterance ids | one large machine | six small jobs merged bit-identically, 0.000e+00 | yes |
+
+Each is a few lines of code resting on a real theorem: only hull vertices can be
+optimal decision rules, the monotone likelihood ratio is the optimal
+calibration, sampling without replacement has a closed form, and
+`(1 - 1/N)^(N-1)` tends to `e^-1`. That is the shape to look for. Sophistication
+belongs in the justification, where it costs nothing to run, not in the
+implementation, where it costs everyone who tries to reproduce you.
+
+#### The closed form earned more than speed
+
+`exp(-1)` is independent of `N`. That one fact explains why Singling Out's room
+above chance collapses as the population grows, from 0.5332 at `N = 2` to 0.0247
+at `N = 9,779`, while Linkability's room grows **[M]**. It is the mechanism
+behind 3.14, where one metric would certify McAdams as anonymous at a realistic
+population. No quantity of simulation would have said *why*. A limit did.
+
+So the preference for closed forms is not only about compute. An expression you
+can differentiate, bound or take a limit of tells you where a metric stops
+working. A sampler tells you a number.
+
+#### Where we have not achieved this
+
+The EER standard error is still an `O(N^2)` bootstrap, and it is the dominant
+cost of the whole comparison **[M]**. Singling Out still draws candidate sets.
+Both are open, and both are the right targets precisely because they are the
+remaining places where cost is paid in sampling rather than in mathematics.
+
+#### The test, before any optimisation
+
+1. **Does it weaken the attacker or shrink the evaluation set?** Then it is not
+   an optimisation. It is a weaker experiment, and the result no longer bounds
+   what it claimed to bound.
+2. **Is the reduction exact?** If it approximates, what is the bound, and does
+   the bound travel next to the number?
+3. **Is the saving in the term that dominates?** Profile it. We got this wrong
+   once: the cost was attributed to the Singling Out sweep by reading the code,
+   `py-spy` showed it was the EER bootstrap, and the two-stage plan built on the
+   wrong model was actively harmful, because each stage repaid the dominant term
+   **[M]**.
+
+#### The floor this sets for a standard
+
+The core runs on numpy alone, so the arithmetic is auditable by anyone with a
+laptop, and the expensive parts shard with a verified identity property. A
+standard that needs a GPU cluster will not be followed by the controllers
+obliged to follow it. One whose arithmetic is exact, closed form where possible,
+and reproducible on a laptop can be. A specification is adopted on the strength
+of what others can verify, not on the strength of what its authors can
+compute.
+
+### On whether more enrolment speakers buy privacy
+
+They do not, and the mechanism is sharper than "the task gets harder for the
+attacker". Both of the following hold at `N = 9,779` **[M]**:
+
+- The attacker fails on more than half of the **original, unprotected** audio,
+  Linkability 0.4515, so most of any privacy measured there is the task being
+  hard rather than the anonymization working.
+- McAdams reads Linkability 0.2810 against a chance level of 0.0001, which is
+  2,748 times chance.
+
+A larger candidate set lowers the attacker's absolute success rate and raises
+the evidence of disclosure relative to chance, at the same time. A controller
+who enlarges the population and reports the lower number has bought a smaller
+number, not more privacy. This is why the three-point report of chance,
+anonymized and original is a requirement in
+[`protocol.md`](protocol.md) rather than a courtesy: with the original
+alongside, a smaller number cannot be bought.
+
+It also sets the resource question the right way round. The cost of an
+evaluation should be proportionate to the attacker being modelled, and 3.12
+shows the honest population is a window of roughly 50 to 250 speakers rather
+than the largest set affordable. Proportionality and economy point the same way
+here, which is a pleasant result and not a general law: when they conflict, the
+attacker wins.
 
 ---
 
