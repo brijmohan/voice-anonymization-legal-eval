@@ -269,3 +269,15 @@ def test_exactly_at_chance_is_not_past_it():
                              system=chance)
     assert not reading.beyond_chance
     assert reading.reduction == pytest.approx(1.0)
+
+
+def test_a_reading_past_chance_does_not_inflate_the_median():
+    """It removed all of the room and then read further. Carrying 1.92 into an
+    average of fractions would make a criterion look better than fully
+    addressed, which is not a state that exists."""
+    chance = math.exp(-1)
+    past = read_criterion("singling_out", original=chance + 0.10,
+                          system=chance - 0.09)
+    assert past.reduction > 1.5
+    summary = criteria_split([past])
+    assert summary["median_reduction"]["singling_out"] == pytest.approx(1.0)

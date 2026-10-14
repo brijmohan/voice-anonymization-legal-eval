@@ -285,7 +285,8 @@ def criteria_split(readings: list[CriterionReading]) -> dict[str, object]:
 
     Returns:
         A mapping with, per criterion, the median reduction over its reliable
-        readings and how many readings it rests on, plus ``spread``, the
+        readings, each clamped to 1.0 so a reading past chance cannot inflate
+        it, and how many readings it rests on, plus ``spread``, the
         difference between the largest and smallest of those medians, and
         ``unaddressed``, the criteria whose median reduction is no better than
         nothing. ``spread`` is None when fewer than two criteria have a
@@ -298,7 +299,11 @@ def criteria_split(readings: list[CriterionReading]) -> dict[str, object]:
         rows = grouped[criterion]
         counts[criterion] = len(rows)
         if rows:
-            values = sorted(r.reduction for r in rows)
+            # A reading past chance removed all of the room and then read
+            # further, so its ratio exceeds 1.0 and would inflate a median.
+            # Clamped to "all of it", which is what it means, rather than
+            # carrying 1.92 into an average of fractions.
+            values = sorted(min(r.reduction, 1.0) for r in rows)
             middle = len(values) // 2
             medians[criterion] = (
                 values[middle] if len(values) % 2
