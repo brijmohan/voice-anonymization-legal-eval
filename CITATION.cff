@@ -9,7 +9,7 @@ abstract: >-
 type: software
 license: MIT
 repository-code: "https://github.com/brijmohan/voice-anonymization-legal-eval"
-version: 2.0.0
+version: 2.2.0
 authors:
   - family-names: Vauquier
     given-names: Nathalie

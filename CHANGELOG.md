@@ -1,6 +1,58 @@
 # Changelog
 
-## Unreleased
+## 2.2.0
+
+Everything below is additive. No value computed by 2.1.0 moves: the paper's
+quoted values still reproduce (`examples/02_reproduce_paper_figures.py`), and the
+one change inside an existing metric, the ROC hull, is verified to return
+identical hull vertices.
+
+**New: `legal_eval.trial_metrics`, the metrics the VoicePrivacy Challenge
+already ships.** Cllr (actual and minimum, after Brümmer and du Preez), the
+Gomez-Barrero linkability `D_sys`, and ZEBRA with both its population figure
+`D_ECE` and its worst-case individual figure `max |LLR|`. `D_sys` is a different
+quantity from this package's Linkability, although VPC's code calls it
+linkability too. `scripts/report_trial_metrics.py` computes all of them, with the
+EER, for every system in a VoicePrivacy run.
+
+**New: `legal_eval.inference`, the third Article 29 criterion.** How much better
+than the population prior an attacker recovers an attribute (gender, age,
+accent) from the released features, as an advantage where `0` is chance. New and
+far less validated than the two legal metrics; use
+`attribute_disclosure_by_speaker` when a speaker has several rows, or the number
+is inflated.
+
+**New: `legal_eval.pseudo_speaker`.** Whether a generated pseudo-voice lands
+close enough to a real speaker to identify them: whether a speaker verification
+system at its own equal error rate threshold would accept it as that speaker,
+rather than a fixed cosine threshold. This is the CNIL's obligation G3.
+
+**New: `scripts/make_verification_kit.py`.** A self-contained kit for checking
+our SRD and LID readings: one score matrix (synthetic by default, so no data
+licence), the true identity per trial, our values, and a numpy-only reference
+implementation.
+
+**New: `scripts/construct_common_voice_subsets.py`.** Builds Common Voice subsets
+by utterance count, which is what the metrics consume, rather than by duration.
+`--criterion duration` keeps the paper's selection. See
+[`docs/subset-design.md`](docs/subset-design.md).
+
+**Faster: ROCCH-EER at large populations.** Points strictly inside a run of equal
+labels are collinear and can never be hull vertices, so they are dropped before
+the hull is built. At 9,779 speakers the hull input falls from 95.6 million
+points to 19,559. Identical hull vertices on 400 random cases including heavy
+ties.
+
+**Fix: Python 3.9.** `zip(..., strict=False)` is 3.10 syntax and broke
+`legal_eval.tradeoff` and one test on 3.9, which `requires-python` still
+supports. CI on 3.9 had been failing since 13 October.
+
+**Docs.** The README now has one table of all nine privacy metrics in the
+field: the criterion each speaks to, what it averages over, its chance level and
+the call that computes it, with privacy log-odds marked as not implemented here.
+Also new: [`docs/constitution.md`](docs/constitution.md),
+[`docs/bibliography.md`](docs/bibliography.md) and
+[`docs/use-cases.md`](docs/use-cases.md).
 
 **New: `legal_eval.tradeoff`, privacy and utility on one plane.** The field
 reports a privacy number and a utility number and leaves the reader to combine

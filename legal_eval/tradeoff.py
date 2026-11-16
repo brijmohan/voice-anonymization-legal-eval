@@ -345,7 +345,7 @@ def equal_utility_exposure(
         return None
     if utility < by_utility[0].utility or utility > by_utility[-1].utility:
         return None
-    for left, right in zip(by_utility, by_utility[1:], strict=False):
+    for left, right in zip(by_utility, by_utility[1:]):
         if left.utility <= utility <= right.utility:
             span = right.utility - left.utility
             if span == 0:

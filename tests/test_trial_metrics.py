@@ -192,7 +192,7 @@ def test_category_tag_boundaries(value, expected):
 def test_category_tag_covers_every_value_without_a_gap():
     """A gap would silently drop a result out of the scale."""
     bounds = [(low, high) for _, low, high in ENFSI_TAG_BOUNDS]
-    for (_, high), (low, _) in zip(bounds, bounds[1:], strict=False):
+    for (_, high), (low, _) in zip(bounds, bounds[1:]):
         assert high == low
 
 
