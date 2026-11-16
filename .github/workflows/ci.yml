@@ -8,7 +8,9 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # ubuntu-latest moved to 26.04, which has no Python 3.9 build, and the
+    # package still declares requires-python >= 3.9. Pinned until 3.9 is dropped.
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
