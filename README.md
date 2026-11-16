@@ -135,6 +135,107 @@ Linkability metric, that the probability and bit metrics move in opposite
 directions as the population grows, and that LID's reported bits depend as much
 on its calibration as on the system being measured.
 
+### All nine privacy metrics, and how to compute each
+
+The field uses about nine privacy quantities. They do not measure nine things:
+they sort by what each one is averaged over, and by which Article 29 criterion
+it speaks to. Eight are implemented here. Privacy log-odds profiles are not:
+use `metrics/utils/plo_plots.py` in the VoicePrivacy Challenge code for those.
+
+| # | Metric | Criterion | Averaged over | Chance level | Compute it with |
+|---|---|---|---|---|---|
+| 1 | **Singling Out** `π_sing` | singling out | a population of `N`, by threshold | `exp(-1)` | `legal-eval singling-out` |
+| 2 | **Linkability** `π_link` | linkability | a population of `N'`, by rank | `1/N'` | `legal-eval linkability` |
+| 3 | **ROCCH-EER** | linkability | all trials | `0.5` | `legal-eval eer`, or `legal_eval.metrics.rocch_eer` |
+| 4 | **Cllr**, actual and minimum | linkability | all trials | 1 bit | `legal_eval.trial_metrics.cllr`, `min_cllr` |
+| 5 | **Gomez-Barrero `D_sys`** | linkability | all trials | `0` | `legal_eval.trial_metrics.gomez_barrero_linkability` |
+| 6 | **ZEBRA** `D_ECE` and `max \|LLR\|` | linkability | all trials, and **the worst individual** | `0` | `legal_eval.trial_metrics.zebra` |
+| 7 | **Privacy log-odds (PLO)** | linkability | all trials | `0` | not implemented here; VoicePrivacy Challenge code |
+| 8 | **SRD**, `MeanD`, `MaxD`, `IdR` | linkability | a population of `N`, by rank | 0 bits (`IdR`: `1/N`) | `legal_eval.comparison.similarity_rank_disclosure` |
+| 9 | **LID**, `ALID`, `PDR` | linkability | a population of `N`, by rank, after calibration | 0 bits | `legal_eval.comparison.local_information_disclosure` |
+
+None of the nine measures the third criterion, **inference**: what an attacker
+learns about the person (gender, age, accent, health). `legal_eval.inference`
+adds that measure. It is new and far less validated than the two legal metrics,
+and its chance level is an advantage of `0` over the population prior.
+
+Three cautions before reading the table as a menu:
+
+- **SRD's `IdR` is Linkability**, by definition, so reporting both as
+  independent evidence double counts.
+- **SRD and LID are our reading** of arXiv:2605.07291 and arXiv:2607.06259, not
+  the authors' code. LID's bits depend on a calibration slope its paper does not
+  specify; record the slope with every number.
+- **`D_sys` is not this project's Linkability.** The VoicePrivacy Challenge code
+  calls `D_sys` "linkability" too. Name the one you mean.
+
+**From a VoicePrivacy Challenge run**, each family has one command:
+
+```bash
+legal-eval vpc --results-dir exp/asv_ssl --output results/vpc.json
+                                                            # Singling Out, Linkability, EER
+python scripts/report_trial_metrics.py --results-dir exp/asv_ssl \
+    --output results/trial_metrics.json                     # EER, Cllr, D_sys, ZEBRA
+python examples/04_compare_privacy_metrics.py --results-dir exp/asv_ssl
+                                                            # all five population metrics, SRD and LID included
+python scripts/report_criteria_split.py --help              # every metric on one scale, per criterion
+```
+
+The scripts import the package, so run `pip install -e .` in a clone first.
+
+**From your own embeddings**, everything except Singling Out comes from one
+score matrix:
+
+```python
+import numpy as np
+from legal_eval import build_speaker_embeddings, build_test_embeddings, cosine_score_matrix
+from legal_eval.metrics import rocch_eer
+from legal_eval.trial_metrics import min_cllr, gomez_barrero_linkability, zebra
+from legal_eval.comparison import (
+    similarity_rank_disclosure, local_information_disclosure,
+    calibration_samples, fit_calibration,
+)
+from legal_eval.inference import attribute_disclosure
+
+enroll = build_speaker_embeddings(enroll_spk2utt, utt2xvector)
+test, _ = build_test_embeddings(test_spk2utt, utt2xvector,
+                                conversation_length=1, selection="first")
+matrix = cosine_score_matrix(enroll, test)
+scores = matrix.scores                                  # (n_enroll, n_trials)
+true_rows = np.array([matrix.enroll_index[s] for s in matrix.test_speakers])
+
+cols = np.arange(scores.shape[1])
+mated = scores[true_rows, cols]                         # same speaker
+mask = np.ones_like(scores, dtype=bool)
+mask[true_rows, cols] = False
+nonmated = scores[mask]                                 # different speakers
+
+eer = rocch_eer(mated, nonmated)
+cllr_min = min_cllr(mated, nonmated)
+d_sys = gomez_barrero_linkability(mated, nonmated)
+z = zebra(mated, nonmated)                              # z.population, z.worst_case, z.tag
+srd = similarity_rank_disclosure(scores, true_rows, n_candidates=20)
+slope, _ = fit_calibration(*calibration_samples(scores, true_rows))
+lid = local_information_disclosure(scores, true_rows, n_candidates=20, slope=slope)
+
+# Inference: one row per speaker, labels from your metadata
+speakers = list(test)
+gender = attribute_disclosure(np.stack([test[s] for s in speakers]),
+                              np.array([labels[s] for s in speakers]),
+                              attribute="gender")
+print(gender.advantage)                                 # 0 is chance
+```
+
+Singling Out needs disjoint conversations per speaker, so use the CLI above or
+`legal_eval.sweeps.singling_out_sweep`. [`docs/metrics.md`](docs/metrics.md) defines the two legal
+metrics and the EER; [`docs/metric-comparison.md`](docs/metric-comparison.md)
+explains the four axes and what the comparison found.
+
+**Always report a utility number beside a privacy number.** A silent or broken
+output scores as perfect privacy on most of these; check the audio first with
+`legal_eval.audio_integrity.check_anonymized`, or over a VoicePrivacy data
+directory with `python scripts/check_anonymized_output.py --tag ... --datasets ...`.
+
 ## Why this exists, and what is established
 
 [`docs/constitution.md`](docs/constitution.md) sets out the objective, the
