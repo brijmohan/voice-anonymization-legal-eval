@@ -969,7 +969,8 @@ Linkability agreement, and one separable LID calibration **[M]**.
 
 ### 3.19 Two figures from the same published metric disagree by 60 points
 
-LID reports a mean in bits and a proportion of disclosure risk. On CV27 at
+LID reports a mean in bits (ALID) and a Positive Disclosure Rate (PDR), the
+share of trials in which the attacker gains anything over chance. On CV27 at
 `N = 9,779` they describe different systems **[M]**:
 
 | | original | ASR-BN | removed |
